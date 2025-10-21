@@ -7,7 +7,7 @@ WORKDIR /app
 COPY gradlew gradlew.bat gradle/ ./
 
 # Copiar el resto del proyecto
-COPY . .
+COPY server .
 
 # Dar permisos de ejecución al wrapper
 RUN chmod +x ./gradlew
