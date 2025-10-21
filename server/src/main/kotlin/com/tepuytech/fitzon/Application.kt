@@ -25,7 +25,12 @@ import io.ktor.server.routing.routing
 import kotlinx.serialization.json.Json
 
 fun main() {
-    embeddedServer(Netty, port = 8080, host = "0.0.0.0") {
+    val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
+
+    embeddedServer(Netty,
+        host = "0.0.0.0",
+        port = port
+    ) {
         module()
     }.start(wait = true)
 }

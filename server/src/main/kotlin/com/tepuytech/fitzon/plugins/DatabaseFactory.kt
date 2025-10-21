@@ -20,24 +20,40 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 object DatabaseFactory {
     fun init() {
+        val databaseUrl = System.getenv("DATABASE_URL")
 
-        val rawDatabaseUrl = System.getenv("DATABASE_URL")
-            ?: "jdbc:postgresql://localhost:5432/fitzon_db"
+        if (databaseUrl != null) {
+            // la URL de Render: postgresql://user:pass@host:port/dbname
+            val url = if (databaseUrl.startsWith("postgresql://")) {
+                databaseUrl.removePrefix("postgresql://")
+            } else {
+                databaseUrl.removePrefix("jdbc:postgresql://")
+            }
 
-        val jdbcUrl = if (rawDatabaseUrl.startsWith("postgresql://")) {
-            "jdbc:$rawDatabaseUrl"
-        } else {
-            rawDatabaseUrl
-        }
+            val userPassAndRest = url.split("@")
+            val userPass = userPassAndRest[0].split(":")
+            val hostPortDb = userPassAndRest[1]
 
-        if (System.getenv("DATABASE_URL") != null) {
+            val user = userPass[0]
+            val password = userPass[1]
+
+            val hostAndDb = hostPortDb.split("/")
+            val hostPort = hostAndDb[0]
+            val database = hostAndDb[1]
+
+            val jdbcUrl = "jdbc:postgresql://$hostPort/$database"
+
+            println("Connecting to database at: $hostPort")
+
             Database.connect(
                 url = jdbcUrl,
-                driver = "org.postgresql.Driver"
+                driver = "org.postgresql.Driver",
+                user = user,
+                password = password
             )
         } else {
             Database.connect(
-                url = jdbcUrl,
+                url = "jdbc:postgresql://localhost:5432/fitzon_db",
                 driver = "org.postgresql.Driver",
                 user = System.getenv("DATABASE_USER") ?: "fitzon_user",
                 password = System.getenv("DATABASE_PASSWORD") ?: "fitzon_pass"
