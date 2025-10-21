@@ -20,12 +20,29 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 object DatabaseFactory {
     fun init() {
-        Database.connect(
-            url = System.getenv("DATABASE_URL") ?: "jdbc:postgresql://localhost:5432/fitzon_db",
-            driver = "org.postgresql.Driver",
-            user = System.getenv("DATABASE_USER") ?: "fitzon_user",
-            password = System.getenv("DATABASE_PASSWORD") ?: "fitzon_pass"
-        )
+
+        val rawDatabaseUrl = System.getenv("DATABASE_URL")
+            ?: "jdbc:postgresql://localhost:5432/fitzon_db"
+
+        val jdbcUrl = if (rawDatabaseUrl.startsWith("postgresql://")) {
+            "jdbc:$rawDatabaseUrl"
+        } else {
+            rawDatabaseUrl
+        }
+
+        if (System.getenv("DATABASE_URL") != null) {
+            Database.connect(
+                url = jdbcUrl,
+                driver = "org.postgresql.Driver"
+            )
+        } else {
+            Database.connect(
+                url = jdbcUrl,
+                driver = "org.postgresql.Driver",
+                user = System.getenv("DATABASE_USER") ?: "fitzon_user",
+                password = System.getenv("DATABASE_PASSWORD") ?: "fitzon_pass"
+            )
+        }
 
         transaction {
             SchemaUtils.create(
