@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:15
+    container_name: fitzon_db
+    restart: always
+    environment:
+      POSTGRES_USER: fitzon_user
+      POSTGRES_PASSWORD: fitzon_pass
+      POSTGRES_DB: fitzon_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fitzon_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: .
+      dockerfile: ./server/Dockerfile
+    container_name: fitzon_server
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8081:8080"
+    environment:
+      DATABASE_URL: jdbc:postgresql://db:5432/fitzon_db
+      DATABASE_USER: fitzon_user
+      DATABASE_PASSWORD: fitzon_pass
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: fitzon_pgadmin
+    restart: always
+    depends_on:
+      - db
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@fitzon.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+
