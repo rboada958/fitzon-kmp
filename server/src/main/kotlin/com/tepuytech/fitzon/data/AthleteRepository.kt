@@ -26,17 +26,29 @@ import java.util.UUID
 
 class AthleteRepository {
 
-    fun getAllAthletes() : List<AthleteDTO> = transaction {
-        Athletes.selectAll().map {
-            AthleteDTO(
-                id = it[Athletes.id].toString(),
-                userId = it[Athletes.userId].toString(),
-                name = it[Users.name] ?: "",
-                email = it[Users.email],
-                age = it[Athletes.age],
-                weight = it[Athletes.weight],
-                height = it[Athletes.height],
-            )
+    fun getAllAthletes(): List<AthleteDTO> = transaction {
+        try {
+            Athletes
+                .innerJoin(Users)
+                .selectAll()
+                .map { row ->
+                    AthleteDTO(
+                        id = row[Athletes.id].toString(),
+                        userId = row[Athletes.userId].toString(),
+                        name = row[Users.name] ?: "Atleta",
+                        email = row[Users.email],
+                        age = row[Athletes.age],
+                        weight = row[Athletes.weight],
+                        height = row[Athletes.height],
+                        bio = row[Athletes.bio],
+                        boxId = row[Athletes.boxId]?.toString(),
+                        profileImageUrl = row[Users.profileImageUrl],
+                        joinedAt = row[Athletes.joinedAt].toString()
+                    )
+                }
+        } catch (e: Exception) {
+            println("Error in getAllAthletes: ${e.message}")
+            emptyList()
         }
     }
 
