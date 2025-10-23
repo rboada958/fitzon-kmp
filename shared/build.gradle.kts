@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
+    kotlin("plugin.serialization") version "2.2.20"
 }
 
 kotlin {
@@ -18,6 +19,10 @@ kotlin {
     jvm()
     
     sourceSets {
+        androidMain.dependencies {
+            // Ktor Client
+            implementation(libs.ktor.client.okhttp)
+        }
         commonMain.dependencies {
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
@@ -30,6 +35,24 @@ kotlin {
             implementation(libs.voyager.screenmodel)
             implementation(libs.voyager.koin)
             implementation(libs.voyager.transitions)
+
+            // Preferences
+            implementation(libs.multiplatform.settings)
+            implementation(libs.multiplatform.settings.coroutines)
+
+            // Ktor Client
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.ktor.client.logging)
+            implementation(libs.ktor.client.cio)
+
+            // Serialization
+            implementation(libs.kotlinx.serialization.json)
+        }
+        iosMain.dependencies {
+            // Ktor Client
+            implementation(libs.ktor.client.darwin)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

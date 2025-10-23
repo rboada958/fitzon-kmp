@@ -1,5 +1,9 @@
 package com.tepuytech.fitzon.domain.usecase
 
-class IsUserLoggedInUseCase() {
+import com.tepuytech.fitzon.domain.repository.AuthRepository
 
+class IsUserLoggedInUseCase (
+    private val authRepository: AuthRepository
+) {
+    suspend operator fun invoke(): Boolean = authRepository.isUserLoggedIn()
 }

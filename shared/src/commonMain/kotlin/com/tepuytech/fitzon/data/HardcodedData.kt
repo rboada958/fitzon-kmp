@@ -26,18 +26,9 @@ import com.tepuytech.fitzon.domain.model.PersonalRecord
 import com.tepuytech.fitzon.domain.model.TopAthlete
 import com.tepuytech.fitzon.domain.model.WorkoutItem
 import com.tepuytech.fitzon.domain.model.WorkoutOption
-import com.tepuytech.fitzon.domain.model.WorkoutStats
 
 /*AthleteDashboardScreen*/
 
-const val userName = "Juan"
-const val streakDays = 7
-val workoutStats = WorkoutStats(
-    completedThisWeek = 5,
-    totalWeekGoal = 7,
-    caloriesBurned = 2450,
-    totalMinutes = 320
-)
 val personalRecords = listOf(
     PersonalRecord("Back Squat", "120 kg", "Hace 2 días", isNew = true),
     PersonalRecord("Deadlift", "150 kg", "Esta semana", isNew = true),
