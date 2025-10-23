@@ -35,6 +35,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,47 +50,75 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.tepuytech.fitzon.data.leaderboard
-import com.tepuytech.fitzon.data.personalRecords
-import com.tepuytech.fitzon.data.streakDays
-import com.tepuytech.fitzon.data.userName
-import com.tepuytech.fitzon.data.workoutStats
-import com.tepuytech.fitzon.domain.model.LeaderboardEntry
+import com.tepuytech.fitzon.domain.model.Leaderboard
 import com.tepuytech.fitzon.domain.model.PersonalRecord
+import com.tepuytech.fitzon.domain.model.athletes.AthleteDashboardResponse
+import com.tepuytech.fitzon.presentation.state.AthleteUiState
+import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
 import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
 import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
 import com.tepuytech.fitzon.presentation.ui.screen.NotificationCenter
+import com.tepuytech.fitzon.presentation.viewmodel.AthleteViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 class AthleteDashboard : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        val viewModel = getScreenModel<AthleteViewModel>()
+        val uiState by viewModel.uiState.collectAsState()
 
-        AthleteDashboardScreen(
-            onNotificationClick = {
-                navigator.push(NotificationCenter())
-            },
-            onProfileClick = {
-                navigator.push(AthleteProfile())
-            },
-            onWorkoutClick = {
-                navigator.push(WorkoutOfTheDay())
-            },
-            onPersonalRecordsClick = {},
-            onLeaderboardClick = {}
-        )
+        LaunchedEffect(Unit) {
+            viewModel.athleteDashboard()
+        }
+
+        when (val state = uiState) {
+            is AthleteUiState.Loading -> {
+                AthleteDashboardShimmer()
+            }
+            is AthleteUiState.Success -> {
+                AthleteDashboardScreen(
+                    dashboard = state.dashboardResponse,
+                    onNotificationClick = { navigator.push(NotificationCenter()) },
+                    onProfileClick = { navigator.push(AthleteProfile()) },
+                    onWorkoutClick = { navigator.push(WorkoutOfTheDay()) },
+                    onPersonalRecordsClick = {},
+                    onLeaderboardClick = {}
+                )
+            }
+            is AthleteUiState.Error -> {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(brush = backgroundGradient),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Error: ${state.message}", color = Color.Red)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { viewModel.athleteDashboard() }) {
+                            Text("Reintentar")
+                        }
+                    }
+                }
+            }
+            else -> {
+                AthleteDashboardShimmer()
+            }
+        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AthleteDashboardScreen(
+    dashboard: AthleteDashboardResponse = AthleteDashboardResponse(),
     onNotificationClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onWorkoutClick: () -> Unit = {},
@@ -175,29 +204,39 @@ fun AthleteDashboardScreen(
                     enter = fadeIn() + slideInVertically()
                 ) {
                     Column {
-                        Text(
-                            text = "¡Hola, $userName! 💪",
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+                        dashboard.userName?.let {
+                            val name = it.split(" ").first()
+                            Text(
+                                text = "¡Hola, $name! 💪",
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "🔥",
-                                fontSize = 24.sp
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "$streakDays días consecutivos entrenando",
-                                fontSize = 16.sp,
-                                color = greenLight,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                        dashboard.streakDays.let {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                if (it != null) {
+                                    if (it > 0) {
+                                        Text(
+                                            text = "🔥",
+                                            fontSize = 24.sp
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+
+                                        Text(
+                                            text = "$it días consecutivos entrenando",
+                                            fontSize = 16.sp,
+                                            color = greenLight,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -284,137 +323,145 @@ fun AthleteDashboardScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                AnimatedVisibility(
-                    visible = visible,
-                    enter = fadeIn() + slideInVertically(
-                        animationSpec = tween(500, delayMillis = 200)
-                    )
-                ) {
-                    Column {
-                        Text(
-                            text = "Esta Semana",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
+                dashboard.workoutStats?.let {
+                    AnimatedVisibility(
+                        visible = visible,
+                        enter = fadeIn() + slideInVertically(
+                            animationSpec = tween(500, delayMillis = 200)
                         )
+                    ) {
+                        Column {
+                            Text(
+                                text = "Esta Semana",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            color = cardBackground
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(20.dp)
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                color = cardBackground
                             ) {
 
+                                Column(
+                                    modifier = Modifier.padding(20.dp)
+                                ) {
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "Entrenamientos",
+                                            fontSize = 16.sp,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        Text(
+                                            text = "${it.completedThisWeek}/${it.totalWeekGoal}",
+                                            fontSize = 16.sp,
+                                            color = greenLight,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    LinearProgressIndicator(
+                                        progress = { it.completedThisWeek.toFloat() / it.totalWeekGoal },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(8.dp),
+                                        color = greenPrimary,
+                                        trackColor = Color(0xFF1B4332),
+                                        strokeCap = StrokeCap.Round
+                                    )
+
+                                    Spacer(modifier = Modifier.height(20.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        StatItem(
+                                            icon = "🔥",
+                                            value = "${it.caloriesBurned}",
+                                            label = "Calorías",
+                                            modifier = Modifier.weight(1f)
+                                        )
+
+                                        Spacer(modifier = Modifier.width(12.dp))
+
+                                        StatItem(
+                                            icon = "⏱️",
+                                            value = "${it.totalMinutes}",
+                                            label = "Minutos",
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                dashboard.personalRecords?.let { personalRecords ->
+                    AnimatedVisibility(
+                        visible = visible,
+                        enter = fadeIn() + slideInVertically(
+                            animationSpec = tween(500, delayMillis = 300)
+                        )
+                    ) {
+                        if (personalRecords.isNotEmpty()) {
+                            Column {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "Entrenamientos",
-                                        fontSize = 16.sp,
-                                        color = Color.White,
-                                        fontWeight = FontWeight.SemiBold
+                                        text = "Records Personales",
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
                                     )
-                                    Text(
-                                        text = "${workoutStats.completedThisWeek}/${workoutStats.totalWeekGoal}",
-                                        fontSize = 16.sp,
-                                        color = greenLight,
-                                        fontWeight = FontWeight.Bold
-                                    )
+
+                                    TextButton(onClick = { onPersonalRecordsClick() }) {
+                                        Text(
+                                            "Ver todos",
+                                            color = greenLight,
+                                            fontSize = 14.sp
+                                        )
+                                    }
                                 }
 
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(12.dp))
 
-                                LinearProgressIndicator(
-                                    progress = { workoutStats.completedThisWeek.toFloat() / workoutStats.totalWeekGoal },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(8.dp),
-                                    color = greenPrimary,
-                                    trackColor = Color(0xFF1B4332),
-                                    strokeCap = StrokeCap.Round
-                                )
-
-                                Spacer(modifier = Modifier.height(20.dp))
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    StatItem(
-                                        icon = "🔥",
-                                        value = "${workoutStats.caloriesBurned}",
-                                        label = "Calorías",
-                                        modifier = Modifier.weight(1f)
-                                    )
 
-                                    Spacer(modifier = Modifier.width(12.dp))
 
-                                    StatItem(
-                                        icon = "⏱️",
-                                        value = "${workoutStats.totalMinutes}",
-                                        label = "Minutos",
-                                        modifier = Modifier.weight(1f)
-                                    )
+                                    personalRecords.forEach { record ->
+                                        PersonalRecordCard(
+                                            record = record,
+                                            cardBackground = cardBackground,
+                                            greenPrimary = greenPrimary,
+                                            textGray = textGray
+                                        )
+                                    }
                                 }
                             }
+                            Spacer(modifier = Modifier.height(24.dp))
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                AnimatedVisibility(
-                    visible = visible,
-                    enter = fadeIn() + slideInVertically(
-                        animationSpec = tween(500, delayMillis = 300)
-                    )
-                ) {
-                    Column {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Records Personales",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-
-                            TextButton(onClick = { onPersonalRecordsClick() }) {
-                                Text(
-                                    "Ver todos",
-                                    color = greenLight,
-                                    fontSize = 14.sp
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            personalRecords.forEach { record ->
-                                PersonalRecordCard(
-                                    record = record,
-                                    cardBackground = cardBackground,
-                                    greenPrimary = greenPrimary,
-                                    textGray = textGray
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
 
                 AnimatedVisibility(
                     visible = visible,
@@ -445,28 +492,29 @@ fun AthleteDashboardScreen(
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
-
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            color = cardBackground
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp)
+                        dashboard.leaderboard?.let { leaderboard ->
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                color = cardBackground
                             ) {
-                                leaderboard.forEach { entry ->
-                                    LeaderboardItem(
-                                        entry = entry,
-                                        greenPrimary = greenPrimary,
-                                        greenLight = greenLight,
-                                        textGray = textGray
-                                    )
-
-                                    if (entry != leaderboard.last()) {
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(vertical = 12.dp),
-                                            color = Color(0xFF1B4332)
+                                Column(
+                                    modifier = Modifier.padding(16.dp)
+                                ) {
+                                    leaderboard.forEach { entry ->
+                                        LeaderboardItem(
+                                            entry = entry,
+                                            greenPrimary = greenPrimary,
+                                            greenLight = greenLight,
+                                            textGray = textGray
                                         )
+
+                                        if (entry != leaderboard.last()) {
+                                            HorizontalDivider(
+                                                modifier = Modifier.padding(vertical = 12.dp),
+                                                color = Color(0xFF1B4332)
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -581,7 +629,7 @@ fun PersonalRecordCard(
 
 @Composable
 fun LeaderboardItem(
-    entry: LeaderboardEntry,
+    entry: Leaderboard,
     greenPrimary: Color,
     greenLight: Color,
     textGray: Color
@@ -599,9 +647,9 @@ fun LeaderboardItem(
                 modifier = Modifier.size(32.dp),
                 contentAlignment = Alignment.Center
             ) {
-                if (entry.rank <= 3) {
+                if (entry.position <= 3) {
                     Text(
-                        text = when(entry.rank) {
+                        text = when(entry.position) {
                             1 -> "🥇"
                             2 -> "🥈"
                             3 -> "🥉"
@@ -611,7 +659,7 @@ fun LeaderboardItem(
                     )
                 } else {
                     Text(
-                        text = "${entry.rank}",
+                        text = "${entry.position}",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = textGray
@@ -634,7 +682,7 @@ fun LeaderboardItem(
             Spacer(modifier = Modifier.width(12.dp))
 
             Text(
-                text = entry.name + if (entry.isCurrentUser) " (Tú)" else "",
+                text = entry.athleteName + if (entry.isCurrentUser) " (Tú)" else "",
                 fontSize = 15.sp,
                 fontWeight = if (entry.isCurrentUser) FontWeight.Bold else FontWeight.Normal,
                 color = if (entry.isCurrentUser) greenLight else Color.White
