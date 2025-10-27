@@ -58,6 +58,11 @@ class SessionManager(settings: ObservableSettings) {
     }
 
     @OptIn(ExperimentalSettingsApi::class)
+    suspend fun userRoleSync(): String {
+        return flowSettings.getString(USER_ROLE_KEY, defaultValue = "")
+    }
+
+    @OptIn(ExperimentalSettingsApi::class)
     suspend fun clearSession() {
         flowSettings.putBoolean(IS_LOGGED_IN_KEY, false)
     }
