@@ -175,11 +175,16 @@ object ClassSchedules : Table("class_schedules") {
     val boxId = uuid("box_id").references(Boxes.id)
     val coachId = uuid("coach_id").references(Coaches.id)
     val name = varchar("name", 255)
+    val description = varchar("description", 500).nullable()
     val time = varchar("time", 10) // HH:MM AM/PM
+    val startTime = varchar("start_time", 10) // HH:MM AM/PM
+    val endTime = varchar("end_time", 10) // HH:MM AM/PM
     val dayOfWeek = varchar("day_of_week", 10) // MONDAY, TUESDAY, etc
     val maxCapacity = integer("max_capacity")
     val currentEnrollment = integer("current_enrollment").default(0)
+    val level = varchar("level", 50).default("BEGINNER")
     val isActive = bool("is_active").default(true)
+    val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)
 
     override val primaryKey = PrimaryKey(id)
 }
