@@ -476,7 +476,7 @@ fun EditAthleteProfileScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "Email y Box no se pueden cambiar",
+                                "La información personal no se pueden cambiar",
                                 fontSize = 13.sp,
                                 color = Color.White
                             )

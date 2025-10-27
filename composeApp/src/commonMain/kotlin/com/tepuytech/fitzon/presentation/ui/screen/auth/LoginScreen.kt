@@ -74,6 +74,17 @@ class Login() : Screen {
         val viewModel = getScreenModel<LoginViewModel>()
         val uiState by viewModel.uiState.collectAsState()
         val isLoggedIn by viewModel.isLoggedIn.collectAsState()
+        val userRole by viewModel.userRole.collectAsState()
+
+        LaunchedEffect(isLoggedIn, userRole) {
+            if (isLoggedIn) {
+                when (userRole) {
+                    "ATHLETE" -> navigator.replaceAll(AthleteDashboard())
+                    "BOX_OWNER" -> navigator.replaceAll(BoxDashboard())
+                    else -> {}
+                }
+            }
+        }
 
         LaunchedEffect(uiState) {
             if (uiState is AuthUiState.Success) {
