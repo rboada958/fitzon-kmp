@@ -16,6 +16,7 @@ import com.tepuytech.fitzon.routes.classRoutes
 import com.tepuytech.fitzon.routes.coachRoutes
 import com.tepuytech.fitzon.routes.memberRoutes
 import com.tepuytech.fitzon.routes.workoutRoutes
+import com.tepuytech.fitzon.utils.MigrationGenerator
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -51,6 +52,7 @@ fun Application.module() {
     }
 
     DatabaseFactory.init()
+    MigrationGenerator.generateInitialMigration()
     configureSecurity()
 
     routing {
