@@ -7,8 +7,6 @@ import com.tepuytech.fitzon.domain.enums.MemberStatus
 import com.tepuytech.fitzon.domain.enums.NotificationPriority
 import com.tepuytech.fitzon.domain.enums.NotificationType
 import com.tepuytech.fitzon.domain.enums.PaymentStatus
-import com.tepuytech.fitzon.domain.model.Achievement
-import com.tepuytech.fitzon.domain.model.AthleteProfile
 import com.tepuytech.fitzon.domain.model.BoxInfo
 import com.tepuytech.fitzon.domain.model.BoxNotification
 import com.tepuytech.fitzon.domain.model.BoxProfile
@@ -18,57 +16,11 @@ import com.tepuytech.fitzon.domain.model.ClassSession
 import com.tepuytech.fitzon.domain.model.Coach
 import com.tepuytech.fitzon.domain.model.CoachInfo
 import com.tepuytech.fitzon.domain.model.DayWorkouts
-import com.tepuytech.fitzon.domain.model.Exercise
-import com.tepuytech.fitzon.domain.model.LeaderboardEntry
 import com.tepuytech.fitzon.domain.model.Member
 import com.tepuytech.fitzon.domain.model.Notification
-import com.tepuytech.fitzon.domain.model.PersonalRecord
 import com.tepuytech.fitzon.domain.model.TopAthlete
 import com.tepuytech.fitzon.domain.model.WorkoutItem
 import com.tepuytech.fitzon.domain.model.WorkoutOption
-
-/*AthleteDashboardScreen*/
-
-val personalRecords = listOf(
-    PersonalRecord("Back Squat", "120 kg", "Hace 2 días", isNew = true),
-    PersonalRecord("Deadlift", "150 kg", "Esta semana", isNew = true),
-    PersonalRecord("Fran", "4:23 min", "Hace 1 semana")
-)
-val leaderboard = listOf(
-    LeaderboardEntry(1, "María García", 2840),
-    LeaderboardEntry(2, "Carlos López", 2750),
-    LeaderboardEntry(3, "Juan Pérez", 2680, isCurrentUser = true),
-    LeaderboardEntry(4, "Ana Martínez", 2590),
-    LeaderboardEntry(5, "Pedro Silva", 2520)
-)
-
-/*AthleteProfileScreen*/
-
-val profile = AthleteProfile(
-    name = "Juan Pérez",
-    email = "juan.perez@email.com",
-    boxName = "Soldier Box",
-    memberSince = "Enero 2024",
-    totalWorkouts = 142,
-    currentStreak = 7,
-    personalRecords = 12,
-    weight = "75 kg",
-    height = "1.75 m",
-    age = 28
-)
-val achievements = listOf(
-    Achievement("🔥", "Racha de Fuego", "7 días consecutivos", true),
-    Achievement("💯", "Centenario", "100 workouts completados", true),
-    Achievement("🏆", "Primera PR", "Primer record personal", true),
-    Achievement("⭐", "Estrella Rising", "10 PRs establecidos", true),
-    Achievement("👑", "Rey del Box", "Primer lugar del mes", false),
-    Achievement("💪", "Fuerza Titán", "Levantar 2x tu peso", false)
-)
-val stats = listOf(
-    Triple("🏋️", "${profile.totalWorkouts}", "Workouts"),
-    Triple("🔥", "${profile.currentStreak}", "Días seguidos"),
-    Triple("📈", "${profile.personalRecords}", "Records")
-)
 
 /*BoxDashboardScreen*/
 
@@ -387,16 +339,6 @@ val dayWorkouts = listOf(
     DayWorkouts("Friday", emptyList()),
     DayWorkouts("Saturday", emptyList()),
     DayWorkouts("Sunday", emptyList())
-)
-
-/*WorkoutOfTheDayScreen*/
-
-val exercises = listOf(
-    Exercise(id = 1, name = "Squats", sets = 3, reps = 10, icon = "🏋️"),
-    Exercise(id = 2, name = "Push-ups", sets = 3, reps = 12, icon = "💪"),
-    Exercise(id = 3, name = "Lunges", sets = 3, reps = 15, icon = "↗️"),
-    Exercise(id = 4, name = "Plank", sets = 3, seconds = 60, icon = "━"),
-    Exercise(id = 5, name = "Burpees", sets = 3, reps = 15, icon = "🏃")
 )
 
 /*ManageClassesScreen*/

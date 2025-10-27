@@ -56,7 +56,9 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.tepuytech.fitzon.domain.model.Leaderboard
 import com.tepuytech.fitzon.domain.model.PersonalRecord
 import com.tepuytech.fitzon.domain.model.athletes.AthleteDashboardResponse
+import com.tepuytech.fitzon.domain.model.workout.WorkoutResponse
 import com.tepuytech.fitzon.presentation.state.AthleteUiState
+import com.tepuytech.fitzon.presentation.state.WorkoutUiState
 import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
 import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
@@ -65,6 +67,7 @@ import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
 import com.tepuytech.fitzon.presentation.ui.screen.NotificationCenter
 import com.tepuytech.fitzon.presentation.viewmodel.AthleteViewModel
+import com.tepuytech.fitzon.presentation.viewmodel.WorkoutViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 class AthleteDashboard : Screen {
@@ -73,44 +76,86 @@ class AthleteDashboard : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = getScreenModel<AthleteViewModel>()
         val uiState by viewModel.uiState.collectAsState()
+        val workoutViewModel = getScreenModel<WorkoutViewModel>()
+        val workoutUiState by workoutViewModel.uiState.collectAsState()
+
 
         LaunchedEffect(Unit) {
-            viewModel.athleteDashboard()
+            workoutViewModel.workoutOfTheDay()
         }
 
-        when (val state = uiState) {
-            is AthleteUiState.Loading -> {
-                AthleteDashboardShimmer()
+        LaunchedEffect(workoutUiState) {
+            when (workoutUiState) {
+                is WorkoutUiState.Success,
+                is WorkoutUiState.Empty -> {
+                    viewModel.athleteDashboard()
+                }
+                else -> {}
             }
-            is AthleteUiState.Success -> {
-                AthleteDashboardScreen(
-                    dashboard = state.dashboardResponse,
-                    onNotificationClick = { navigator.push(NotificationCenter()) },
-                    onProfileClick = { navigator.push(AthleteProfile()) },
-                    onWorkoutClick = { navigator.push(WorkoutOfTheDay()) },
-                    onPersonalRecordsClick = {},
-                    onLeaderboardClick = {}
-                )
-            }
-            is AthleteUiState.Error -> {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(brush = backgroundGradient),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Error: ${state.message}", color = Color.Red)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.athleteDashboard() }) {
-                            Text("Reintentar")
-                        }
+        }
+
+        if (uiState is AthleteUiState.Loading || workoutUiState is WorkoutUiState.Loading) {
+            AthleteDashboardShimmer()
+            return
+        }
+
+        if (workoutUiState is WorkoutUiState.Error) {
+            val error = workoutUiState as WorkoutUiState.Error
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(brush = backgroundGradient),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Error: ${error.message}", color = Color.Red)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = { workoutViewModel.workoutOfTheDay() }) {
+                        Text("Reintentar")
                     }
                 }
             }
-            else -> {
-                AthleteDashboardShimmer()
+            return
+        }
+
+        if (uiState is AthleteUiState.Error) {
+            val error = uiState as AthleteUiState.Error
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(brush = backgroundGradient),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Error: ${error.message}", color = Color.Red)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = { viewModel.athleteDashboard() }) {
+                        Text("Reintentar")
+                    }
+                }
             }
+            return
+        }
+
+        if (uiState is AthleteUiState.Success) {
+            val athleteState = uiState as AthleteUiState.Success
+
+            val workout = when (val state = workoutUiState) {
+                is WorkoutUiState.Success -> state.workoutResponse
+                else -> null
+            }
+
+            AthleteDashboardScreen(
+                dashboard = athleteState.dashboard,
+                workout = workout,
+                onNotificationClick = { navigator.push(NotificationCenter()) },
+                onProfileClick = { navigator.push(AthleteProfile()) },
+                onWorkoutClick = { navigator.push(WorkoutOfTheDay(workout)) },
+                onPersonalRecordsClick = {},
+                onLeaderboardClick = {}
+            )
+        } else {
+            AthleteDashboardShimmer()
         }
     }
 }
@@ -119,6 +164,7 @@ class AthleteDashboard : Screen {
 @Composable
 fun AthleteDashboardScreen(
     dashboard: AthleteDashboardResponse = AthleteDashboardResponse(),
+    workout: WorkoutResponse? = null,
     onNotificationClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onWorkoutClick: () -> Unit = {},
@@ -257,65 +303,107 @@ fun AthleteDashboardScreen(
                         Column(
                             modifier = Modifier.padding(20.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text(
-                                        text = "WORKOUT DEL DÍA",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF081C15).copy(alpha = 0.7f),
-                                        letterSpacing = 1.sp
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "Full Body Blast",
-                                        fontSize = 24.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF081C15)
-                                    )
-                                }
-
-                                Surface(
-                                    shape = CircleShape,
-                                    color = Color(0xFF081C15).copy(alpha = 0.2f)
+                            if (workout?.message.isNullOrEmpty()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Box(
-                                        modifier = Modifier.padding(12.dp)
+                                    Column {
+                                        Text(
+                                            text = "WORKOUT DEL DÍA",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF081C15).copy(alpha = 0.7f),
+                                            letterSpacing = 1.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = workout?.title ?: "No asignado",
+                                            fontSize = 24.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF081C15)
+                                        )
+                                    }
+
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = Color(0xFF081C15).copy(alpha = 0.2f)
                                     ) {
-                                        Text("🏋️", fontSize = 28.sp)
+                                        Box(
+                                            modifier = Modifier.padding(12.dp)
+                                        ) {
+                                            Text("🏋️", fontSize = 28.sp)
+                                        }
                                     }
                                 }
-                            }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
 
-                            Text(
-                                text = "5 ejercicios • 30-40 min • Alta intensidad",
-                                fontSize = 14.sp,
-                                color = Color(0xFF081C15).copy(alpha = 0.8f)
-                            )
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Button(
-                                onClick = { onWorkoutClick() },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF081C15)
-                                )
-                            ) {
                                 Text(
-                                    "Empezar Ahora",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = greenLight,
-                                    modifier = Modifier.padding(vertical = 4.dp)
+                                    text = buildString {
+                                        append(workout?.exercises?.size?.toString() ?: "0")
+                                        append(" ejercicios • ")
+                                        append(workout?.duration?.let { "$it min" } ?: "No asignado")
+                                        append(" • ")
+                                        append(workout?.difficulty ?: "No asignado")
+                                    },
+                                    fontSize = 14.sp,
+                                    color = Color(0xFF081C15).copy(alpha = 0.8f)
                                 )
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Button(
+                                    onClick = { onWorkoutClick() },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF081C15)
+                                    )
+                                ) {
+                                    Text(
+                                        "Empezar Ahora",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = greenLight,
+                                        modifier = Modifier.padding(vertical = 4.dp)
+                                    )
+                                }
+                            }  else {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 32.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "🏋️‍♂️",
+                                        fontSize = 42.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = workout.message ?: "No hay un workout disponible por ahora",
+                                        fontSize = 16.sp,
+                                        color = Color(0xFF081C15).copy(alpha = 0.8f),
+                                        textAlign = TextAlign.Center,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Button(
+                                        onClick = { onWorkoutClick() },
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF081C15))
+                                    ) {
+                                        Text(
+                                            "Ver otros entrenamientos",
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = greenLight,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
