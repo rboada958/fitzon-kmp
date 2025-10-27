@@ -2,30 +2,54 @@
   <dictionary name="project">
     <words>
       <w>aceptas</w>
+      <w>actualizado</w>
       <w>ahora</w>
+      <w>altura</w>
+      <w>asignado</w>
       <w>atleta</w>
+      <w>años</w>
       <w>buscar</w>
       <w>calorías</w>
+      <w>cambiar</w>
+      <w>cancelar</w>
+      <w>configuración</w>
       <w>consecutivos</w>
       <w>continuar</w>
       <w>contraseña</w>
       <w>crear</w>
       <w>cuenta</w>
+      <w>datos</w>
+      <w>desde</w>
+      <w>disponible</w>
+      <w>edad</w>
+      <w>editar</w>
+      <w>ejercicios</w>
       <w>eliminar</w>
       <w>empezar</w>
       <w>entrenamientos</w>
       <w>entrenando</w>
+      <w>exitosamente</w>
       <w>fitzon</w>
+      <w>físicos</w>
+      <w>guardados</w>
+      <w>guardar</w>
+      <w>información</w>
       <w>iniciar</w>
       <w>listar</w>
+      <w>logros</w>
       <w>límites</w>
+      <w>miembro</w>
       <w>minutos</w>
+      <w>nombre</w>
       <w>obtener</w>
       <w>olvidaste</w>
+      <w>otros</w>
+      <w>perfil</w>
       <w>personales</w>
       <w>política</w>
       <w>privacidad</w>
       <w>progreso</w>
+      <w>pueden</w>
       <w>rastrea</w>
       <w>registra</w>
       <w>regístrate</w>
@@ -33,9 +57,11 @@
       <w>semana</w>
       <w>servicio</w>
       <w>sesión</w>
+      <w>sido</w>
       <w>supera</w>
       <w>tienes</w>
       <w>términos</w>
+      <w>volver</w>
     </words>
   </dictionary>
 </component>

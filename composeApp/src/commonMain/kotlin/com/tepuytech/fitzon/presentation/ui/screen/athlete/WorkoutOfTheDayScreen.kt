@@ -60,8 +60,8 @@ import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.tepuytech.fitzon.data.exercises
-import com.tepuytech.fitzon.domain.model.Exercise
+import com.tepuytech.fitzon.domain.model.workout.ExerciseResponse
+import com.tepuytech.fitzon.domain.model.workout.WorkoutResponse
 import com.tepuytech.fitzon.getPlatform
 import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
@@ -69,12 +69,13 @@ import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-class WorkoutOfTheDay : Screen {
+class WorkoutOfTheDay(val workout: WorkoutResponse?) : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
 
         WorkoutOfTheDayScreen(
+            workout = workout,
             onBackClick = {
                 navigator.pop()
             }
@@ -84,18 +85,14 @@ class WorkoutOfTheDay : Screen {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutOfTheDayScreen(
+    workout: WorkoutResponse? = null,
     onBackClick: () -> Unit,
 ) {
-    var exercises by remember {
-        mutableStateOf(
-            exercises
-        )
-    }
+    var exercises by remember { mutableStateOf(workout?.exercises ?: emptyList()) }
 
     var showCompletionDialog by remember { mutableStateOf(false) }
-    val allCompleted = exercises.all { it.isCompleted }
+    val allCompleted = if (exercises.isNotEmpty()) exercises.all { it.isCompleted } else false
 
-    // Animación del botón principal
     val buttonScale by animateFloatAsState(
         targetValue = if (allCompleted) 1.05f else 1f,
         animationSpec = spring(
@@ -142,161 +139,179 @@ fun WorkoutOfTheDayScreen(
         },
         containerColor = Color.Transparent
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(brush = backgroundGradient)
-                .padding(paddingValues)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-            ) {
-                // Header Section
-                Column(
-                    modifier = Modifier.padding(24.dp)
-                ) {
-                    Text(
-                        text = "Full Body Blast",
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        lineHeight = 40.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = "Prepárate para superar tus límites con este entrenamiento de alta intensidad de cuerpo completo diseñado para desarrollar fuerza y resistencia.",
-                        fontSize = 16.sp,
-                        color = textGray,
-                        lineHeight = 24.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Progress indicator
-                    val completedCount = exercises.count { it.isCompleted }
-                    val totalCount = exercises.size
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        LinearProgressIndicator(
-                            progress = { completedCount.toFloat() / totalCount },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(8.dp),
-                            color = greenPrimary,
-                            trackColor = Color(0xFF2D6A4F),
-                            strokeCap = StrokeCap.Round
-                        )
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Text(
-                            text = "$completedCount/$totalCount",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = greenPrimary
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Exercise List
-                Column(
-                    modifier = Modifier.padding(horizontal = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    exercises.forEach { exercise ->
-                        ExerciseCard(
-                            exercise = exercise,
-                            cardBackground = cardBackground,
-                            greenPrimary = greenPrimary,
-                            textGray = textGray,
-                            onToggleComplete = { exerciseId ->
-                                exercises = exercises.map {
-                                    if (it.id == exerciseId) {
-                                        it.copy(isCompleted = !it.isCompleted)
-                                    } else {
-                                        it
-                                    }
-                                }
-                            },
-                            onEdit = { exerciseId ->
-                                // Acción de editar
-                            },
-                            onDelete = { exerciseId ->
-                                exercises = exercises.filter { it.id != exerciseId }
-                            }
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(100.dp))
-            }
-
-            // Bottom Button
+        if (workout != null && !workout.exercises.isNullOrEmpty()) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color(0xFF081C15).copy(alpha = 0.95f),
-                                Color(0xFF081C15)
-                            )
-                        )
-                    )
-                    .padding(24.dp)
+                    .fillMaxSize()
+                    .background(brush = backgroundGradient)
+                    .padding(paddingValues)
             ) {
-                Button(
-                    onClick = {
-                        if (allCompleted) {
-                            showCompletionDialog = true
-                        }
-                    },
-                    enabled = allCompleted,
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .scale(buttonScale),
-                    shape = RoundedCornerShape(28.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = greenPrimary,
-                        disabledContainerColor = Color(0xFF2D6A4F)
-                    )
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                    // Header Section
+                    Column(
+                        modifier = Modifier.padding(24.dp)
                     ) {
-                        if (allCompleted) {
-                            Text(
-                                text = "✓ ",
-                                fontSize = 20.sp,
-                                color = Color(0xFF081C15)
+                        Text(
+                            text = workout.title ?: "",
+                            fontSize = 36.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            lineHeight = 40.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = workout.description ?: "",
+                            fontSize = 16.sp,
+                            color = textGray,
+                            lineHeight = 24.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Progress indicator
+                        val completedCount = exercises.count { it.isCompleted }
+                        val totalCount = exercises.size
+
+                        if (totalCount > 0) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                LinearProgressIndicator(
+                                    progress = { completedCount.toFloat() / totalCount },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(8.dp),
+                                    color = greenPrimary,
+                                    trackColor = Color(0xFF2D6A4F),
+                                    strokeCap = StrokeCap.Round
+                                )
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                Text(
+                                    text = "$completedCount/$totalCount",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = greenPrimary
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Exercise List
+                    Column(
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        exercises.forEach { exercise ->
+                            ExerciseCard(
+                                exercise = exercise,
+                                cardBackground = cardBackground,
+                                greenPrimary = greenPrimary,
+                                textGray = textGray,
+                                onToggleComplete = { exerciseId ->
+                                    exercises = exercises.map {
+                                        if (it.id == exerciseId) {
+                                            it.copy(isCompleted = !it.isCompleted)
+                                        } else {
+                                            it
+                                        }
+                                    }
+                                },
+                                onEdit = { exerciseId ->
+                                    // Handle edit action
+                                },
+                                onDelete = { exerciseId ->
+                                    exercises = exercises.filter { it.id != exerciseId }
+                                }
                             )
                         }
-                        Text(
-                            text = if (allCompleted) "Marcar como Completado" else "Completa todos los ejercicios",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (allCompleted) Color(0xFF081C15) else textGray
+                    }
+
+                    Spacer(modifier = Modifier.height(100.dp))
+                }
+
+                // Bottom Button
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color(0xFF081C15).copy(alpha = 0.95f),
+                                    Color(0xFF081C15)
+                                )
+                            )
                         )
+                        .padding(24.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            if (allCompleted) {
+                                showCompletionDialog = true
+                            }
+                        },
+                        enabled = allCompleted,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .scale(buttonScale),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = greenPrimary,
+                            disabledContainerColor = Color(0xFF2D6A4F)
+                        )
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            if (allCompleted) {
+                                Text(
+                                    text = "✓ ",
+                                    fontSize = 20.sp,
+                                    color = Color(0xFF081C15)
+                                )
+                            }
+                            Text(
+                                text = if (allCompleted) "Marcar como Completado" else "Completa todos los ejercicios",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (allCompleted) Color(0xFF081C15) else textGray
+                            )
+                        }
                     }
                 }
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(brush = backgroundGradient)
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = workout?.message ?: "No hay workout disponible hoy 💪",
+                    fontSize = 18.sp,
+                    color = Color.White,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }
 
-    // Diálogo de confirmación
     if (showCompletionDialog) {
         AlertDialog(
             onDismissRequest = { showCompletionDialog = false },
@@ -335,24 +350,22 @@ fun WorkoutOfTheDayScreen(
 
 @Composable
 fun ExerciseCard(
-    exercise: Exercise,
+    exercise: ExerciseResponse,
     cardBackground: Color,
     greenPrimary: Color,
     textGray: Color,
-    onToggleComplete: (Int) -> Unit,
-    onEdit: (Int) -> Unit,
-    onDelete: (Int) -> Unit
+    onToggleComplete: (String) -> Unit,
+    onEdit: (String) -> Unit,
+    onDelete: (String) -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
-    // Animación de escala al completar
     val scale by animateFloatAsState(
         targetValue = if (exercise.isCompleted) 0.98f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
         label = "cardScale"
     )
 
-    // Animación de opacidad
     val alpha by animateFloatAsState(
         targetValue = if (exercise.isCompleted) 0.6f else 1f,
         animationSpec = tween(300),
@@ -373,7 +386,6 @@ fun ExerciseCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon Circle con animación
             Box(
                 modifier = Modifier.size(56.dp)
             ) {
@@ -389,13 +401,12 @@ fun ExerciseCard(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = exercise.icon,
+                            text = "🏋️",
                             fontSize = 28.sp
                         )
                     }
                 }
 
-                // Checkmark cuando está completado
                 androidx.compose.animation.AnimatedVisibility(
                     visible = exercise.isCompleted,
                     enter = scaleIn() + fadeIn(),
@@ -442,11 +453,7 @@ fun ExerciseCard(
                 Text(
                     text = buildString {
                         append("${exercise.sets} sets | ")
-                        if (exercise.reps != null) {
-                            append("${exercise.reps} reps")
-                        } else if (exercise.seconds != null) {
-                            append("${exercise.seconds} secs")
-                        }
+                        append("${exercise.reps} reps")
                     },
                     fontSize = 14.sp,
                     color = textGray

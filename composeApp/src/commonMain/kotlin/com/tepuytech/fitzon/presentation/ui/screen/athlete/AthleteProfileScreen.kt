@@ -38,6 +38,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,13 +51,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.tepuytech.fitzon.data.achievements
-import com.tepuytech.fitzon.data.profile
-import com.tepuytech.fitzon.data.stats
 import com.tepuytech.fitzon.domain.model.Achievement
+import com.tepuytech.fitzon.domain.model.athletes.AthleteProfileResponse
 import com.tepuytech.fitzon.getPlatform
+import com.tepuytech.fitzon.presentation.state.AthleteUiState
+import com.tepuytech.fitzon.presentation.state.LogoutUiState
+import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
 import com.tepuytech.fitzon.presentation.ui.composable.FitzonSettingItem
 import com.tepuytech.fitzon.presentation.ui.composable.FitzonStatCard
 import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
@@ -66,35 +69,70 @@ import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
 import com.tepuytech.fitzon.presentation.ui.screen.NotificationCenter
 import com.tepuytech.fitzon.presentation.ui.screen.auth.Login
+import com.tepuytech.fitzon.presentation.viewmodel.AthleteViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 class AthleteProfile : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        AthleteProfileScreen(
-            onBackClick = {
-                navigator.pop()
-            },
-            onNotificationClick = {
-                navigator.push(NotificationCenter())
-            },
-            onBoxProfileClick = {
-                navigator.push(BoxInfoAthlete())
-            },
-            onEditProfileClick = {
-                navigator.push(EditAthleteProfile())
-            },
-            onLogoutClick = {
+        val viewModel = getScreenModel<AthleteViewModel>()
+        val uiState by viewModel.uiState.collectAsState()
+        val logoutState by viewModel.logoutState.collectAsState()
+
+        LaunchedEffect(Unit) {
+            viewModel.athleteProfile()
+        }
+
+        LaunchedEffect(uiState) {
+            when (uiState) {
+                is AthleteUiState.Success -> {}
+                is AthleteUiState.Error -> {}
+                else -> {}
+            }
+        }
+
+        LaunchedEffect(logoutState) {
+            if (logoutState is LogoutUiState.Success) {
                 navigator.replaceAll(Login())
             }
-        )
+        }
+
+        if (uiState is AthleteUiState.Loading) {
+            AthleteDashboardShimmer()
+            return
+        }
+
+        if (uiState is AthleteUiState.ProfileSuccess) {
+            val profile = (uiState as AthleteUiState.ProfileSuccess).profile
+
+            AthleteProfileScreen(
+                profile = profile,
+                onBackClick = {
+                    navigator.pop()
+                },
+                onNotificationClick = {
+                    navigator.push(NotificationCenter())
+                },
+                onBoxProfileClick = {
+                    navigator.push(BoxInfoAthlete())
+                },
+                onEditProfileClick = {
+                    navigator.push(EditAthleteProfile(profile))
+                },
+                onLogoutClick = {
+                    viewModel.logout()
+                }
+            )
+        }
     }
 }
 
+@Suppress("SuspiciousIndentation")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AthleteProfileScreen(
+    profile: AthleteProfileResponse = AthleteProfileResponse(),
     onBackClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
     onBoxProfileClick: () -> Unit = {},
@@ -191,7 +229,7 @@ fun AthleteProfileScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
-                                text = profile.name,
+                                text = profile.name ?: "",
                                 fontSize = 28.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -200,7 +238,7 @@ fun AthleteProfileScreen(
                             Spacer(modifier = Modifier.height(4.dp))
 
                             Text(
-                                text = profile.email,
+                                text = profile.email ?: "",
                                 fontSize = 14.sp,
                                 color = textGray
                             )
@@ -221,7 +259,7 @@ fun AthleteProfileScreen(
                                     Text("🏋️", fontSize = 16.sp)
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = profile.boxName,
+                                        text = profile.boxName  ?: "",
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = greenLight
@@ -274,7 +312,7 @@ fun AthleteProfileScreen(
                             .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        stats.forEach { (icon, value, label) ->
+                        profile.stats?.forEach { (icon, value, label) ->
                             FitzonStatCard(
                                 icon = icon,
                                 value = value,
@@ -282,7 +320,7 @@ fun AthleteProfileScreen(
                                 cardBackground = cardBackground,
                                 modifier = Modifier.weight(1f)
                             )
-                            if (stats.last() != Triple(icon, value, label)) {
+                            if (profile.stats?.last() != Triple(icon, value, label)) {
                                 Spacer(modifier = Modifier.width(12.dp))
                             }
                         }
@@ -292,6 +330,7 @@ fun AthleteProfileScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Información Personal
+                if (profile.weight != null || profile.height != null || profile.age != null)
                 AnimatedVisibility(
                     visible = visible,
                     enter = fadeIn() + slideInVertically(
@@ -318,12 +357,12 @@ fun AthleteProfileScreen(
                             Column(
                                 modifier = Modifier.padding(16.dp)
                             ) {
-                                InfoRow("⚖️", "Peso", profile.weight)
+                                InfoRow("⚖️", "Peso", profile.weight  ?: "")
                                 HorizontalDivider(
                                     modifier = Modifier.padding(vertical = 12.dp),
                                     color = Color(0xFF1B4332)
                                 )
-                                InfoRow("📏", "Altura", profile.height)
+                                InfoRow("📏", "Altura", profile.height  ?: "")
                                 HorizontalDivider(
                                     modifier = Modifier.padding(vertical = 12.dp),
                                     color = Color(0xFF1B4332)
@@ -359,7 +398,7 @@ fun AthleteProfileScreen(
                             )
 
                             Text(
-                                text = "${achievements.count { it.isUnlocked }}/${achievements.size}",
+                                text = "${profile.achievements?.count { it.isUnlocked }}/${profile.achievements?.size}",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = greenLight
@@ -371,7 +410,7 @@ fun AthleteProfileScreen(
                         Column(
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            achievements.forEach { achievement ->
+                            profile.achievements?.forEach { achievement ->
                                 AchievementCard(
                                     achievement = achievement,
                                     cardBackground = cardBackground,
@@ -385,7 +424,6 @@ fun AthleteProfileScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Opciones adicionales
                 AnimatedVisibility(
                     visible = visible,
                     enter = fadeIn() + slideInVertically(
@@ -532,7 +570,7 @@ fun AchievementCard(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = achievement.title,
+                    text = achievement.name,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = if (achievement.isUnlocked) Color.White else textGray
