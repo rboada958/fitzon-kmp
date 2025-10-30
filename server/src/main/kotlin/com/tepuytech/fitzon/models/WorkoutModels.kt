@@ -49,3 +49,21 @@ data class ExerciseResponse(
     val notes: String? = null,
     val videoUrl: String? = null
 )
+
+@Serializable
+data class CompleteWorkoutRequest(
+    val caloriesBurned: Int? = null,
+    val durationMinutes: Int? = null,
+    val notes: String? = null
+)
+
+@Serializable
+data class WorkoutLogResponse(
+    val id: String,
+    val athleteId: String,
+    val workoutId: String,
+    val completedAt: String,
+    val caloriesBurned: Int?,
+    val durationMinutes: Int?,
+    val notes: String?
+)

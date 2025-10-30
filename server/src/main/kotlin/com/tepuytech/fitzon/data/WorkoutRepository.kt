@@ -3,6 +3,7 @@ package com.tepuytech.fitzon.data
 import com.tepuytech.fitzon.models.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.javatime.date
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDate
 import java.util.UUID
@@ -305,6 +306,81 @@ class WorkoutRepository {
             )
         } catch (e: Exception) {
             println("Error in getWorkoutOfDay: ${e.message}")
+            null
+        }
+    }
+
+    fun completeWorkout(
+        userId: String,
+        workoutId: String,
+        caloriesBurned: Int?,
+        durationMinutes: Int?,
+        notes: String?
+    ): WorkoutLogResponse? = transaction {
+        try {
+            val userUuid = UUID.fromString(userId)
+            val workoutUuid = UUID.fromString(workoutId)
+
+            // Obtener el athlete
+            val athlete = Athletes.selectAll()
+                .where { Athletes.userId eq userUuid }
+                .singleOrNull() ?: return@transaction null
+
+            val athleteId = athlete[Athletes.id]
+
+            // Verificar que el workout existe
+            val workoutExists = Workouts.selectAll()
+                .where { Workouts.id eq workoutUuid }
+                .count() > 0
+
+            if (!workoutExists) {
+                println("⚠️ Workout not found")
+                return@transaction null
+            }
+
+            // Verificar si ya completó este workout hoy
+            val today = LocalDate.now()
+            val existingLog = WorkoutLogs.selectAll()
+                .where {
+                    (WorkoutLogs.athleteId eq athleteId) and
+                            (WorkoutLogs.workoutId eq workoutUuid) and
+                            (WorkoutLogs.completedAt.date() eq today)
+                }
+                .singleOrNull()
+
+            if (existingLog != null) {
+                println("⚠️ Athlete already completed this workout today")
+                return@transaction null
+            }
+
+            // Crear log del workout
+            val logId = UUID.randomUUID()
+            WorkoutLogs.insert {
+                it[WorkoutLogs.id] = logId
+                it[WorkoutLogs.athleteId] = athleteId
+                it[WorkoutLogs.workoutId] = workoutUuid
+                it[WorkoutLogs.caloriesBurned] = caloriesBurned
+                it[WorkoutLogs.durationMinutes] = durationMinutes
+                it[WorkoutLogs.notes] = notes
+            }
+
+            // Obtener el log creado
+            val log = WorkoutLogs.selectAll()
+                .where { WorkoutLogs.id eq logId }
+                .single()
+
+            WorkoutLogResponse(
+                id = logId.toString(),
+                athleteId = athleteId.toString(),
+                workoutId = workoutUuid.toString(),
+                completedAt = log[WorkoutLogs.completedAt].toString(),
+                caloriesBurned = log[WorkoutLogs.caloriesBurned],
+                durationMinutes = log[WorkoutLogs.durationMinutes],
+                notes = log[WorkoutLogs.notes]
+            )
+        } catch (e: Exception) {
+            println("Error in completeWorkout: ${e.message}")
+            e.printStackTrace()
             null
         }
     }

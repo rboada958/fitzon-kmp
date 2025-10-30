@@ -2,14 +2,17 @@ package com.tepuytech.fitzon.routes
 
 import com.tepuytech.fitzon.data.BoxRepository
 import com.tepuytech.fitzon.models.ErrorResponse
+import com.tepuytech.fitzon.models.UpdateBoxRequest
 import com.tepuytech.fitzon.models.Users
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
+import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
+import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -52,7 +55,7 @@ fun Route.boxRoutes(repo: BoxRepository) {
                     return@get
                 }
 
-                // Verificar que el usuario es BOX_OWNER
+                // Verificar que el user es BOX_OWNER
                 val user = transaction {
                     Users.selectAll().where { Users.id eq UUID.fromString(userId) }.singleOrNull()
                 }
@@ -100,7 +103,7 @@ fun Route.boxRoutes(repo: BoxRepository) {
                     return@get
                 }
 
-                // Verificar que el usuario es BOX_OWNER
+                // Verificar que el user es BOX_OWNER
                 val user = transaction {
                     Users.selectAll().where { Users.id eq UUID.fromString(userId) }.singleOrNull()
                 }
@@ -120,6 +123,43 @@ fun Route.boxRoutes(repo: BoxRepository) {
                     call.respond(HttpStatusCode.NotFound, ErrorResponse("Box profile not found"))
                 } else {
                     call.respond(HttpStatusCode.OK, profile)
+                }
+            }
+
+            // 📍 PUT /api/boxes/profile - Actualizar perfil del box
+            put("/profile") {
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("id")?.asString()
+
+                if (userId.isNullOrEmpty()) {
+                    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                    return@put
+                }
+
+                val request = try {
+                    call.receive<UpdateBoxRequest>()
+                } catch (_: Exception) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid request format"))
+                    return@put
+                }
+
+                val box = repo.updateBox(
+                    userId,
+                    request.name,
+                    request.description,
+                    request.location,
+                    request.phone,
+                    request.email,
+                    request.schedule,
+                    request.amenities,
+                    request.photos,
+                    request.logoUrl
+                )
+
+                if (box == null) {
+                    call.respond(HttpStatusCode.NotFound, ErrorResponse("Box not found"))
+                } else {
+                    call.respond(HttpStatusCode.OK, box)
                 }
             }
         }

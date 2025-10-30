@@ -4,8 +4,8 @@ data class ClassSchedule(
     val id: Int,
     val time: String,
     val name: String,
-    val coach: String,
-    val currentCapacity: Int,
+    val coachName: String,
+    val currentEnrollment: Int,
     val maxCapacity: Int,
     val isNow: Boolean = false
 )

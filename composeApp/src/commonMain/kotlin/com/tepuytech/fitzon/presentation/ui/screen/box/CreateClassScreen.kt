@@ -281,7 +281,7 @@ fun CreateClassScreen(
                         value = selectedCoach,
                         onValueChange = {},
                         readOnly = true,
-                        placeholder = { Text("Selecciona coach", color = textGray) },
+                        placeholder = { Text("Selecciona coachName", color = textGray) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .menuAnchor(MenuAnchorType.PrimaryNotEditable),

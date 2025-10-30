@@ -42,3 +42,16 @@ data class BoxInfoResponse(
     val amenities: List<String>,
     val photos: List<String>
 )
+
+@Serializable
+data class UpdateBoxRequest(
+    val name: String? = null,
+    val description: String? = null,
+    val location: String? = null,
+    val phone: String? = null,
+    val email: String? = null,
+    val schedule: String? = null,
+    val amenities: List<String>? = null,
+    val photos: List<String>? = null,
+    val logoUrl: String? = null
+)

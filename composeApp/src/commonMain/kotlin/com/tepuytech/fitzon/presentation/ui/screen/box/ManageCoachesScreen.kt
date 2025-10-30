@@ -146,7 +146,7 @@ fun ManageCoachesScreen(
         containerColor = Color.Transparent,
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { /* Contratar nuevo coach */ },
+                onClick = { /* Contratar nuevo coachName */ },
                 containerColor = greenPrimary,
                 contentColor = Color(0xFF081C15)
             ) {
@@ -208,7 +208,7 @@ fun ManageCoachesScreen(
                             decorationBox = { innerTextField ->
                                 if (searchQuery.isEmpty()) {
                                     Text(
-                                        "Buscar coach por nombre...",
+                                        "Buscar coachName por nombre...",
                                         color = textGray,
                                         fontSize = 16.sp
                                     )
@@ -277,7 +277,7 @@ fun ManageCoachesScreen(
         }
     }
 
-    // Diálogo de detalles del coach
+    // Diálogo de detalles del coachName
     if (showCoachDetails && selectedCoach != null) {
         AlertDialog(
             onDismissRequest = { showCoachDetails = false },

@@ -309,6 +309,13 @@ class AthleteRepository {
                     ?.get(Boxes.name)
             }
 
+            val boxId = athlete[Athletes.boxId]?.let { boxId ->
+                Boxes.selectAll()
+                    .where { Boxes.id eq boxId }
+                    .singleOrNull()
+                    ?.get(Boxes.id)
+            }
+
             // Calcular total de workouts
             val totalWorkouts = WorkoutLogs.selectAll()
                 .where { WorkoutLogs.athleteId eq athleteId }
@@ -342,6 +349,7 @@ class AthleteRepository {
                 id = athlete[Athletes.id].toString(),
                 name = user[Users.name] ?: "Atleta",
                 email = user[Users.email],
+                boxId = boxId.toString(),
                 boxName = boxName,
                 memberSince = memberSince,
                 totalWorkouts = totalWorkouts,
