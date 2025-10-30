@@ -115,6 +115,39 @@ fun Route.workoutRoutes(repo: WorkoutRepository) {
                     call.respond(HttpStatusCode.OK, workout)
                 }
             }
+
+            // 📍 POST /api/workouts/{workoutId}/complete - Registrar workout completado
+            post("/{workoutId}/complete") {
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("id")?.asString()
+                val workoutId = call.parameters["workoutId"]
+
+                if (userId.isNullOrEmpty() || workoutId.isNullOrEmpty()) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid parameters"))
+                    return@post
+                }
+
+                val request = try {
+                    call.receive<CompleteWorkoutRequest>()
+                } catch (_: Exception) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid request format"))
+                    return@post
+                }
+
+                val log = repo.completeWorkout(
+                    userId,
+                    workoutId,
+                    request.caloriesBurned,
+                    request.durationMinutes,
+                    request.notes
+                )
+
+                if (log == null) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Failed to complete workout. You may have already completed it today."))
+                } else {
+                    call.respond(HttpStatusCode.Created, log)
+                }
+            }
         }
     }
 }

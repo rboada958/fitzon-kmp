@@ -317,7 +317,7 @@ fun ClassCard(
                         color = Color.White
                     )
                     Text(
-                        text = classSchedule.coach,
+                        text = classSchedule.coachName,
                         fontSize = 13.sp,
                         color = textGray
                     )
@@ -328,10 +328,10 @@ fun ClassCard(
                 horizontalAlignment = Alignment.End
             ) {
                 Text(
-                    text = "${classSchedule.currentCapacity}/${classSchedule.maxCapacity}",
+                    text = "${classSchedule.currentEnrollment}/${classSchedule.maxCapacity}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (classSchedule.currentCapacity >= classSchedule.maxCapacity)
+                    color = if (classSchedule.currentEnrollment >= classSchedule.maxCapacity)
                         Color(0xFFFF6B6B)
                     else
                         greenLight
@@ -372,7 +372,7 @@ fun TopAthleteCard(
 
             Column {
                 Text(
-                    text = athlete.category,
+                    text = athlete.achievement,
                     fontSize = 12.sp,
                     color = greenLight,
                     fontWeight = FontWeight.SemiBold,

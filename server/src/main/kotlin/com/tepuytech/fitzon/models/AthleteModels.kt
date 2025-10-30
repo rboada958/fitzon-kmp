@@ -29,6 +29,7 @@ data class AthleteProfileResponse(
     val id: String,
     val name: String,
     val email: String,
+    val boxId: String? = null,
     val boxName: String?,
     val memberSince: String,
     val totalWorkouts: Int,

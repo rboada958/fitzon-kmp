@@ -6,6 +6,7 @@ import com.tepuytech.fitzon.data.BoxRepository
 import com.tepuytech.fitzon.data.ClassRepository
 import com.tepuytech.fitzon.data.CoachRepository
 import com.tepuytech.fitzon.data.MemberRepository
+import com.tepuytech.fitzon.data.PersonalRecordRepository
 import com.tepuytech.fitzon.data.WorkoutRepository
 import com.tepuytech.fitzon.plugins.DatabaseFactory
 import com.tepuytech.fitzon.plugins.configureSecurity
@@ -15,6 +16,7 @@ import com.tepuytech.fitzon.routes.boxRoutes
 import com.tepuytech.fitzon.routes.classRoutes
 import com.tepuytech.fitzon.routes.coachRoutes
 import com.tepuytech.fitzon.routes.memberRoutes
+import com.tepuytech.fitzon.routes.personalRecordRoutes
 import com.tepuytech.fitzon.routes.workoutRoutes
 import com.tepuytech.fitzon.utils.MigrationGenerator
 import io.ktor.serialization.kotlinx.json.json
@@ -66,6 +68,7 @@ fun Application.module() {
             memberRoutes(MemberRepository())
             workoutRoutes(WorkoutRepository())
             classRoutes(ClassRepository())
+            personalRecordRoutes(PersonalRecordRepository())
         }
     }
 }

@@ -2,9 +2,13 @@
   <dictionary name="project">
     <words>
       <w>aceptas</w>
+      <w>activos</w>
       <w>actualizado</w>
+      <w>actualizar</w>
       <w>ahora</w>
+      <w>almacenadas</w>
       <w>altura</w>
+      <w>aprobar</w>
       <w>asignado</w>
       <w>atleta</w>
       <w>años</w>
@@ -12,12 +16,19 @@
       <w>calorías</w>
       <w>cambiar</w>
       <w>cancelar</w>
+      <w>centenario</w>
+      <w>completado</w>
+      <w>completados</w>
       <w>configuración</w>
       <w>consecutivos</w>
+      <w>consistente</w>
+      <w>contar</w>
       <w>continuar</w>
       <w>contraseña</w>
+      <w>creado</w>
       <w>crear</w>
       <w>cuenta</w>
+      <w>cuántos</w>
       <w>datos</w>
       <w>desde</w>
       <w>disponible</w>
@@ -28,32 +39,45 @@
       <w>empezar</w>
       <w>entrenamientos</w>
       <w>entrenando</w>
+      <w>existe</w>
       <w>exitosamente</w>
+      <w>fecha</w>
       <w>fitzon</w>
+      <w>formatear</w>
+      <w>fuego</w>
       <w>físicos</w>
       <w>guardados</w>
       <w>guardar</w>
       <w>información</w>
+      <w>ingreso</w>
       <w>iniciar</w>
       <w>listar</w>
       <w>logros</w>
       <w>límites</w>
+      <w>mejor</w>
       <w>miembro</w>
+      <w>miembros</w>
       <w>minutos</w>
       <w>nombre</w>
       <w>obtener</w>
       <w>olvidaste</w>
       <w>otros</w>
+      <w>pendiente</w>
       <w>perfil</w>
       <w>personales</w>
+      <w>pertenece</w>
       <w>política</w>
+      <w>primera</w>
       <w>privacidad</w>
       <w>progreso</w>
       <w>pueden</w>
+      <w>racha</w>
       <w>rastrea</w>
       <w>registra</w>
       <w>regístrate</w>
       <w>reintentar</w>
+      <w>retornar</w>
+      <w>seguidos</w>
       <w>semana</w>
       <w>servicio</w>
       <w>sesión</w>
@@ -61,6 +85,7 @@
       <w>supera</w>
       <w>tienes</w>
       <w>términos</w>
+      <w>verificar</w>
       <w>volver</w>
     </words>
   </dictionary>

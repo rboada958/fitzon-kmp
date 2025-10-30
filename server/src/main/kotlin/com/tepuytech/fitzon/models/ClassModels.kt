@@ -22,5 +22,7 @@ data class ClassScheduleItem(
     val coachName: String,
     val currentEnrollment: Int,
     val maxCapacity: Int,
+    val description: String,
+    val level: String,
     val isNow: Boolean = false
 )

@@ -210,7 +210,7 @@ fun ManageClassesScreen(
                             decorationBox = { innerTextField ->
                                 if (searchQuery.isEmpty()) {
                                     Text(
-                                        "Buscar clase o coach...",
+                                        "Buscar clase o coachName...",
                                         color = textGray,
                                         fontSize = 16.sp
                                     )

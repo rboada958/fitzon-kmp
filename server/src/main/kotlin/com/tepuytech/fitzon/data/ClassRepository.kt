@@ -65,6 +65,8 @@ class ClassRepository {
                 coachName = coachName,
                 currentEnrollment = 0,
                 maxCapacity = maxCapacity,
+                description = description ?: "",
+                level = level,
                 isNow = false
             )
         } catch (e: Exception) {
@@ -104,6 +106,8 @@ class ClassRepository {
                         coachName = coach?.get(Users.name) ?: "Coach",
                         currentEnrollment = currentEnrollment,
                         maxCapacity = schedule[ClassSchedules.maxCapacity],
+                        description = schedule[ClassSchedules.description] ?: "",
+                        level = schedule[ClassSchedules.level],
                         isNow = false
                     )
                 }

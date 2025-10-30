@@ -17,12 +17,12 @@ import com.tepuytech.fitzon.models.StatItem
 import com.tepuytech.fitzon.models.TopAthleteDTO
 import com.tepuytech.fitzon.models.Users
 import com.tepuytech.fitzon.models.WorkoutLogs
-import org.jetbrains.exposed.sql.SortOrder
+import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.count
 import org.jetbrains.exposed.sql.javatime.date
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -79,7 +79,7 @@ class BoxRepository {
 
             val boxId = box[Boxes.id]
 
-            // Calcular estadísticas
+            // Calculate statistics
             val totalMembers = Athletes.selectAll()
                 .where { Athletes.boxId eq boxId }
                 .count()
@@ -112,7 +112,7 @@ class BoxRepository {
                 .count()
                 .toInt()
 
-            // Renovaciones pendientes
+            // Pending renewals
             val pendingRenewals = if (totalMembers > 0) {
                 MembershipRenewals
                     .innerJoin(Athletes)
@@ -134,7 +134,7 @@ class BoxRepository {
                 pendingRenewals = pendingRenewals
             )
 
-            // Clases de hoy
+            // Classes de hoy
             val currentDay = LocalDateTime.now().dayOfWeek
                 .getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ENGLISH)
                 .uppercase()
@@ -158,7 +158,9 @@ class BoxRepository {
                             .singleOrNull()
 
                         val scheduleTime = schedule[ClassSchedules.time]
-                        val isNow = isClassNow(scheduleTime, currentTimeStr)
+                        val startTime = schedule[ClassSchedules.startTime]
+                        val endTime = schedule[ClassSchedules.endTime]
+                        val isNow = isClassNow(startTime, endTime, currentTimeStr)
 
                         ClassScheduleItemDTO(
                             id = schedule[ClassSchedules.id].toString(),
@@ -174,7 +176,7 @@ class BoxRepository {
                 emptyList()
             }
 
-            // Top atletas
+            // Top athletes
             val topAthletes = try {
                 if (totalMembers > 0) {
                     getTopAthletes(boxId)
@@ -202,55 +204,88 @@ class BoxRepository {
         val now = LocalDateTime.now()
         val startOfMonth = now.withDayOfMonth(1)
 
+        println("🔍 DEBUG - Box ID: $boxId")
+        println("🔍 DEBUG - Start of month: $startOfMonth")
+
         // Atleta del mes (más workouts este mes)
-        val athleteOfMonth = Athletes
-            .innerJoin(Users)
-            .innerJoin(WorkoutLogs)
-            .selectAll()
-            .where {
-                (Athletes.boxId eq boxId) and
-                        (WorkoutLogs.completedAt greaterEq startOfMonth)
-            }
-            .groupBy(Athletes.id, Users.name)
-            .orderBy(WorkoutLogs.id.count() to SortOrder.DESC)
-            .limit(1)
-            .firstOrNull()
-            ?.get(Users.name)
+        val athleteOfMonth: String? = try {
+            val workoutCounts = WorkoutLogs
+                .innerJoin(Athletes)
+                .innerJoin(Users)
+                .selectAll()
+                .where {
+                    (Athletes.boxId eq boxId) and
+                            (WorkoutLogs.completedAt greaterEq startOfMonth)
+                }
+                .groupBy { it[Athletes.id] }
+                .mapValues { (_, logs) ->
+                    logs.first()[Users.name] to logs.size
+                }
+                .maxByOrNull { it.value.second }
+                ?.value?.first
 
-        // Mejor progreso (más PRs este mes)
-        val bestProgress = Athletes
-            .innerJoin(Users)
-            .innerJoin(PersonalRecords)
-            .selectAll()
-            .where {
-                (Athletes.boxId eq boxId) and
-                        (PersonalRecords.achievedAt greaterEq startOfMonth)
-            }
-            .groupBy(Athletes.id, Users.name)
-            .orderBy(PersonalRecords.id.count() to SortOrder.DESC)
-            .limit(1)
-            .firstOrNull()
-            ?.get(Users.name)
+            println("🔍 DEBUG - Athlete of month: $workoutCounts")
+            workoutCounts
+        } catch (e: Exception) {
+            println("❌ ERROR getting athlete of month: ${e.message}")
+            e.printStackTrace()
+            null
+        }
 
-        // Más consistente (mayor streak)
-        val mostConsistent = Athletes
-            .innerJoin(Users)
-            .selectAll()
-            .where { Athletes.boxId eq boxId }
-            .map {
-                val athleteId = it[Athletes.id]
-                val name = it[Users.name] ?: "Atleta"
-                val streak = calculateStreakForAthlete(athleteId)
-                Pair(name, streak)
-            }
-            .maxByOrNull { it.second }
-            ?.first
+        // Mejor progreso
+        val bestProgress: String? = try {
+            val prCounts = PersonalRecords
+                .innerJoin(Athletes)
+                .innerJoin(Users)
+                .selectAll()
+                .where {
+                    (Athletes.boxId eq boxId) and
+                            (PersonalRecords.achievedAt greaterEq startOfMonth)
+                }
+                .groupBy { it[Athletes.id] }
+                .mapValues { (_, records) ->
+                    records.first()[Users.name] to records.size
+                }
+                .maxByOrNull { it.value.second }
+                ?.value?.first
 
-        return listOfNotNull(
+            println("🔍 DEBUG - Best progress: $prCounts")
+            prCounts
+        } catch (e: Exception) {
+            println("❌ ERROR getting best progress: ${e.message}")
+            null
+        }
+
+        // Más consistente
+        val mostConsistent: String? = try {
+            Athletes
+                .innerJoin(Users)
+                .selectAll()
+                .where { Athletes.boxId eq boxId }
+                .map {
+                    val athleteId = it[Athletes.id]
+                    val name = it[Users.name] ?: "Atleta"
+                    val streak = calculateStreakForAthlete(athleteId)
+                    name to streak
+                }
+                .filter { it.second > 0 }
+                .maxByOrNull { it.second }
+                ?.first
+        } catch (e: Exception) {
+            println("❌ ERROR getting most consistent: ${e.message}")
+            null
+        }
+
+        println("🔍 DEBUG - Most consistent: $mostConsistent")
+
+        val result = listOfNotNull(
             athleteOfMonth?.let { TopAthleteDTO(it, "Atleta del Mes", "🏆") },
             bestProgress?.let { TopAthleteDTO(it, "Mejor Progreso", "📈") },
             mostConsistent?.let { TopAthleteDTO(it, "Más Consistente", "🔥") }
         )
+
+        println("🔍 DEBUG - Final top athletes: ${result.size}")
+        return result
     }
 
     fun getBoxInfoForAthlete(boxId: String): BoxInfoResponse? = transaction {
@@ -282,7 +317,7 @@ class BoxRepository {
                 .map { coach ->
                     val specialtiesJson = coach[Coaches.specialties]
                     val specialties = try {
-                        kotlinx.serialization.json.Json.decodeFromString<List<String>>(specialtiesJson)
+                        Json.decodeFromString<List<String>>(specialtiesJson)
                     } catch (_: Exception) {
                         listOf("Coach")
                     }
@@ -294,10 +329,10 @@ class BoxRepository {
                     )
                 }
 
-            // Parsear amenities (almacenadas como JSON)
+            // Parser amenities (almacenadas como JSON)
             val amenitiesJson = box[Boxes.amenities]
             val amenities = try {
-                kotlinx.serialization.json.Json.decodeFromString<List<String>>(amenitiesJson)
+                Json.decodeFromString<List<String>>(amenitiesJson)
             } catch (_: Exception) {
                 listOf(
                     "🚿 Regaderas",
@@ -309,10 +344,10 @@ class BoxRepository {
                 )
             }
 
-            // Parsear photos
+            // Parser photos
             val photosJson = box[Boxes.photos]
             val photos = try {
-                kotlinx.serialization.json.Json.decodeFromString<List<String>>(photosJson)
+                Json.decodeFromString<List<String>>(photosJson)
             } catch (_: Exception) {
                 listOf("🏢", "🏋️", "💪", "🤸")
             }
@@ -354,7 +389,7 @@ class BoxRepository {
 
             val boxId = box[Boxes.id]
 
-            // Calcular estadísticas
+            // Calcular statistics
             val totalMembers = Athletes.selectAll()
                 .where { Athletes.boxId eq boxId }
                 .count()
@@ -383,7 +418,7 @@ class BoxRepository {
                 .count()
                 .toInt()
 
-            // Total de clases (schedules únicos)
+            // Total de classes (schedules únicos)
             val classes = ClassSchedules.selectAll()
                 .where {
                     (ClassSchedules.boxId eq boxId) and
@@ -392,7 +427,7 @@ class BoxRepository {
                 .count()
                 .toInt()
 
-            // Año de fundación
+            // Año de foundation
             val foundedYear = box[Boxes.createdAt].year.toString()
 
             val stats = listOf(
@@ -443,12 +478,72 @@ class BoxRepository {
         return streak
     }
 
-    private fun isClassNow(classTime: String, currentTime: String): Boolean {
-        // Convertir "09:00 AM" a "09:00" para comparación
-        val classHour = classTime.replace(" AM", "").replace(" PM", "")
-        val currentHour = currentTime
+    private fun isClassNow(startTime: String, endTime: String, currentTime: String): Boolean {
+        try {
+            // Converter "09:00 AM" a minutos desde medianoche
+            val start = parseTimeToMinutes(startTime)
+            val end = parseTimeToMinutes(endTime)
+            val now = parseTimeToMinutes(currentTime)
 
-        // Rango de +/- 30 minutos
-        return classHour == currentHour // Simplificado, puedes mejorar la lógica
+            return now in start..end
+        } catch (_: Exception) {
+            return false
+        }
+    }
+
+    private fun parseTimeToMinutes(time: String): Int {
+        val parts = time.split(" ")
+        val timeParts = parts[0].split(":")
+        var hours = timeParts[0].toInt()
+        val minutes = timeParts[1].toInt()
+        val isPM = parts.getOrNull(1) == "PM"
+
+        if (isPM && hours != 12) hours += 12
+        if (!isPM && hours == 12) hours = 0
+
+        return hours * 60 + minutes
+    }
+
+    fun updateBox(
+        ownerId: String,
+        name: String?,
+        description: String?,
+        location: String?,
+        phone: String?,
+        email: String?,
+        schedule: String?,
+        amenities: List<String>?,
+        photos: List<String>?,
+        logoUrl: String?
+    ): BoxDTO? = transaction {
+        try {
+            val ownerUuid = UUID.fromString(ownerId)
+
+            // Verificar que el box pertenece al owner
+            val box = Boxes.selectAll()
+                .where { Boxes.ownerId eq ownerUuid }
+                .singleOrNull() ?: return@transaction null
+
+            val boxId = box[Boxes.id]
+
+            // Actualizar box
+            Boxes.update({ Boxes.id eq boxId }) {
+                if (name != null) it[Boxes.name] = name
+                if (description != null) it[Boxes.description] = description
+                if (location != null) it[Boxes.location] = location
+                if (phone != null) it[Boxes.phone] = phone
+                if (email != null) it[Boxes.email] = email
+                if (schedule != null) it[Boxes.schedule] = schedule
+                if (amenities != null) it[Boxes.amenities] = Json.encodeToString(amenities)
+                if (photos != null) it[Boxes.photos] = Json.encodeToString(photos)
+                if (logoUrl != null) it[Boxes.logoUrl] = logoUrl
+            }
+
+            // Retornar box actualizado
+            getBoxById(boxId.toString())
+        } catch (e: Exception) {
+            println("Error in updateBox: ${e.message}")
+            null
+        }
     }
 }
