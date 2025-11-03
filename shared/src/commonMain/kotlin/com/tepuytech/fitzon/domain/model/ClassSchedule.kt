@@ -3,7 +3,7 @@ package com.tepuytech.fitzon.domain.model
 import kotlinx.serialization.Serializable
 @Serializable
 data class ClassSchedule(
-    val id: Int,
+    val id: String,
     val time: String,
     val name: String,
     val coachName: String,

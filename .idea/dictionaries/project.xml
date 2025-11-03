@@ -2,17 +2,21 @@
   <dictionary name="project">
     <words>
       <w>aceptas</w>
+      <w>acerca</w>
+      <w>activo</w>
       <w>activos</w>
       <w>actualizado</w>
       <w>actualizar</w>
       <w>ahora</w>
       <w>almacenadas</w>
       <w>altura</w>
+      <w>amenidades</w>
       <w>aprobar</w>
       <w>asignado</w>
       <w>atleta</w>
       <w>atletas</w>
       <w>años</w>
+      <w>bueno</w>
       <w>buscar</w>
       <w>calorías</w>
       <w>cambiar</w>
@@ -22,8 +26,10 @@
       <w>completado</w>
       <w>completados</w>
       <w>configuración</w>
+      <w>consecutivo</w>
       <w>consecutivos</w>
       <w>consistente</w>
+      <w>contacto</w>
       <w>contar</w>
       <w>continuar</w>
       <w>contraseña</w>
@@ -36,6 +42,7 @@
       <w>datos</w>
       <w>desde</w>
       <w>destacados</w>
+      <w>dirección</w>
       <w>disponible</w>
       <w>duración</w>
       <w>edad</w>
@@ -43,10 +50,13 @@
       <w>ejercicios</w>
       <w>eliminar</w>
       <w>empezar</w>
+      <w>entrenadores</w>
       <w>entrenamientos</w>
       <w>entrenando</w>
+      <w>excelente</w>
       <w>existe</w>
       <w>exitosamente</w>
+      <w>experiencia</w>
       <w>fecha</w>
       <w>fitzon</w>
       <w>formatear</w>
@@ -54,9 +64,11 @@
       <w>físicos</w>
       <w>guardados</w>
       <w>guardar</w>
+      <w>horario</w>
       <w>información</w>
       <w>ingreso</w>
       <w>iniciar</w>
+      <w>instalaciones</w>
       <w>inválido</w>
       <w>listar</w>
       <w>logros</w>
@@ -91,10 +103,14 @@
       <w>sesión</w>
       <w>sido</w>
       <w>supera</w>
+      <w>teléfono</w>
       <w>tienes</w>
       <w>todas</w>
       <w>términos</w>
+      <w>ubicación</w>
       <w>usuario</w>
+      <w>valoraciones</w>
+      <w>valorar</w>
       <w>verificar</w>
       <w>volver</w>
       <w>válido</w>

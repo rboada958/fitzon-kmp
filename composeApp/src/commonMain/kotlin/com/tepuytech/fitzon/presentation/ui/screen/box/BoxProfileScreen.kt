@@ -30,6 +30,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,11 +43,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.tepuytech.fitzon.data.boxProfile
-import com.tepuytech.fitzon.data.boxStatsList
+import com.tepuytech.fitzon.domain.model.box.BoxProfileResponse
 import com.tepuytech.fitzon.getPlatform
+import com.tepuytech.fitzon.presentation.state.BoxUiState
+import com.tepuytech.fitzon.presentation.state.LogoutUiState
+import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
 import com.tepuytech.fitzon.presentation.ui.composable.FitzonSettingItem
 import com.tepuytech.fitzon.presentation.ui.composable.FitzonStatCard
 import com.tepuytech.fitzon.presentation.ui.composable.FitzonTopAppBar
@@ -56,40 +60,70 @@ import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
 import com.tepuytech.fitzon.presentation.ui.screen.auth.Login
+import com.tepuytech.fitzon.presentation.viewmodel.BoxViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 class BoxProfile : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        val viewModel = getScreenModel<BoxViewModel>()
+        val uiState by viewModel.uiState.collectAsState()
+        val logoutState by viewModel.logoutState.collectAsState()
 
-        BoxProfileScreen(
-            onBackClick = { navigator.pop() },
-            onEditClick = {
-                navigator.push(EditBoxProfile())
-            },
-            onManageWorkoutsClick = {
-                navigator.push(ManageWorkouts())
-            },
-            onManageMembersClick = {
-                navigator.push(ManageMembers())
-            },
-            onManageCoachesClick = {
-                navigator.push(ManageCoaches())
-            },
-            onManageClassesClick = {
-                navigator.push(ManageClasses())
-            },
-            onLogoutClick = {
+        LaunchedEffect(Unit) {
+            viewModel.boxProfile()
+        }
+
+        LaunchedEffect(logoutState) {
+            if (logoutState is LogoutUiState.Success) {
                 navigator.replaceAll(Login())
             }
-        )
+        }
+
+        when (uiState) {
+            is BoxUiState.Loading -> {
+                AthleteDashboardShimmer()
+                return
+            }
+            is BoxUiState.SuccessBoxProfile -> {
+                val boxProfileState = (uiState as BoxUiState.SuccessBoxProfile).boxProfile
+                BoxProfileScreen(
+                    boxProfileState = boxProfileState,
+                    onBackClick = { navigator.pop() },
+                    onEditClick = {
+                        navigator.push(EditBoxProfile())
+                    },
+                    onManageWorkoutsClick = {
+                        navigator.push(ManageWorkouts())
+                    },
+                    onManageMembersClick = {
+                        navigator.push(ManageMembers())
+                    },
+                    onManageCoachesClick = {
+                        navigator.push(ManageCoaches())
+                    },
+                    onManageClassesClick = {
+                        navigator.push(ManageClasses())
+                    },
+                    onLogoutClick = {
+                        viewModel.logout()
+                    }
+                )
+            }
+            is BoxUiState.Error -> {
+                Text("Error: ${(uiState as BoxUiState.Error).message}")
+            }
+
+            else -> {}
+        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BoxProfileScreen(
+    boxProfileState: BoxProfileResponse = BoxProfileResponse(),
     onBackClick: () -> Unit = {},
     onEditClick: () -> Unit = {},
     onManageWorkoutsClick: () -> Unit = {},
@@ -160,7 +194,7 @@ fun BoxProfileScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
-                                text = boxProfile.name,
+                                text = boxProfileState.name,
                                 fontSize = 28.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -175,14 +209,14 @@ fun BoxProfileScreen(
                                 Text("⭐", fontSize = 20.sp)
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "${boxProfile.rating}",
+                                    text = "${boxProfileState.rating}",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = greenLight
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "(${boxProfile.activeMembers} valoraciones)",
+                                    text = "(${boxProfileState.activeMembers} valoraciones)",
                                     fontSize = 14.sp,
                                     color = textGray
                                 )
@@ -201,7 +235,7 @@ fun BoxProfileScreen(
                                     Text("📅", fontSize = 16.sp)
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "Fundado en ${boxProfile.foundedYear}",
+                                        text = "Fundado en ${boxProfileState.foundedYear}",
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = greenLight
@@ -212,7 +246,7 @@ fun BoxProfileScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
-                                text = boxProfile.description,
+                                text = boxProfileState.description,
                                 fontSize = 14.sp,
                                 color = textGray,
                                 textAlign = TextAlign.Center,
@@ -256,7 +290,7 @@ fun BoxProfileScreen(
                             .padding(horizontal = 20.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        boxStatsList.forEach { (icon, value, label) ->
+                        boxProfileState.stats?.forEach { (icon, value, label) ->
                             FitzonStatCard(
                                 icon = icon,
                                 value = value,
@@ -264,7 +298,7 @@ fun BoxProfileScreen(
                                 cardBackground = cardBackground,
                                 modifier = Modifier.weight(1f)
                             )
-                            if (boxStatsList.last() != Triple(icon, value, label)) {
+                            if (boxProfileState.stats?.last() != Triple(icon, value, label)) {
                                 Spacer(modifier = Modifier.width(12.dp))
                             }
                         }
@@ -300,17 +334,17 @@ fun BoxProfileScreen(
                             Column(
                                 modifier = Modifier.padding(20.dp)
                             ) {
-                                ContactRow("📧", "Email", boxProfile.email)
+                                ContactRow("📧", "Email", boxProfileState.email)
                                 HorizontalDivider(
                                     modifier = Modifier.padding(vertical = 12.dp),
                                     color = Color(0xFF1B4332)
                                 )
-                                ContactRow("📱", "Teléfono", boxProfile.phone)
+                                ContactRow("📱", "Teléfono", boxProfileState.phone)
                                 HorizontalDivider(
                                     modifier = Modifier.padding(vertical = 12.dp),
                                     color = Color(0xFF1B4332)
                                 )
-                                ContactRow("📍", "Dirección", boxProfile.address)
+                                ContactRow("📍", "Dirección", boxProfileState.address)
                             }
                         }
                     }

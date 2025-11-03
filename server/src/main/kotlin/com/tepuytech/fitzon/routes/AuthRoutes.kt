@@ -58,7 +58,7 @@ fun Route.authRoutes(repo: AuthRepository) {
             if (user == null) {
                 call.respond(HttpStatusCode.Conflict, ErrorResponse("User already exists or invalid data"))
             } else {
-                val tokens = JwtConfig.generateTokenPair(user.id)  // ← Cambio aquí
+                val tokens = JwtConfig.generateTokenPair(user.id)
                 call.respond(HttpStatusCode.Created, AuthResponse(
                     accessToken = tokens.accessToken,
                     refreshToken = tokens.refreshToken,
@@ -79,7 +79,7 @@ fun Route.authRoutes(repo: AuthRepository) {
             if (user == null) {
                 call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid credentials"))
             } else {
-                val tokens = JwtConfig.generateTokenPair(user.id)  // ← Cambio aquí
+                val tokens = JwtConfig.generateTokenPair(user.id)
                 call.respond(
                     HttpStatusCode.OK,
                     AuthResponse(

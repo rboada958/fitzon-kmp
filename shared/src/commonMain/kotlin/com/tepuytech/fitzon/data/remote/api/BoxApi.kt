@@ -2,30 +2,52 @@ package com.tepuytech.fitzon.data.remote.api
 
 import com.tepuytech.fitzon.data.local.SessionManager
 import com.tepuytech.fitzon.domain.model.box.BoxDashboardResponse
-import com.tepuytech.fitzon.domain.model.token.RefreshTokenRequest
-import com.tepuytech.fitzon.domain.model.token.TokenResponse
+import com.tepuytech.fitzon.domain.model.box.BoxInfoResponse
+import com.tepuytech.fitzon.domain.model.box.BoxProfileResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.request.get
 import io.ktor.client.request.header
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
+import io.ktor.http.HttpStatusCode
 
 class BoxApi(
     private val httpClient: HttpClient,
     private val sessionManager: SessionManager
 ) {
     suspend fun boxDashboard(): BoxDashboardResponse {
-        val token = sessionManager.getTokenSync()
-        return httpClient.get("api/boxes/dashboard") {
-            header("Authorization", "Bearer $token")
-        }.body()
+        val response = httpClient.get("api/boxes/dashboard") {
+            header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
+        }
+
+        if (response.status == HttpStatusCode.Unauthorized) {
+            throw ClientRequestException(response, "Unauthorized")
+        }
+
+        return response.body()
     }
 
-    suspend fun refreshToken(): TokenResponse {
-        val refreshToken = sessionManager.getRefreshTokenSync()
-        return httpClient.post("api/auth/refresh") {
-            setBody(RefreshTokenRequest(refreshToken = refreshToken ?: ""))
-        }.body()
+    suspend fun boxInfo(boxId: String): BoxInfoResponse {
+        val response = httpClient.get("api/boxes/$boxId/info") {
+            header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
+        }
+
+        if (response.status == HttpStatusCode.Unauthorized) {
+            throw ClientRequestException(response, "Unauthorized")
+        }
+
+        return response.body()
+    }
+
+    suspend fun boxProfile() : BoxProfileResponse {
+        val response = httpClient.get("api/boxes/profile") {
+            header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
+        }
+
+        if (response.status == HttpStatusCode.Unauthorized) {
+            throw ClientRequestException(response, "Unauthorized")
+        }
+
+        return response.body()
     }
 }

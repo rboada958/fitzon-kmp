@@ -105,7 +105,7 @@ class AthleteProfile : Screen {
 
         if (uiState is AthleteUiState.ProfileSuccess) {
             val profile = (uiState as AthleteUiState.ProfileSuccess).profile
-
+            val boxId = profile.boxId ?: ""
             AthleteProfileScreen(
                 profile = profile,
                 onBackClick = {
@@ -115,7 +115,7 @@ class AthleteProfile : Screen {
                     navigator.push(NotificationCenter())
                 },
                 onBoxProfileClick = {
-                    navigator.push(BoxInfoAthlete())
+                    navigator.push(BoxInfoAthlete(boxId))
                 },
                 onEditProfileClick = {
                     navigator.push(EditAthleteProfile(profile))
