@@ -81,20 +81,6 @@ object JwtConfig {
     }
 
     /**
-     * Obtiene el ID del usuario de un token
-     * @param token JWT token
-     * @return ID del usuario o null si es inválido
-     */
-    fun getUserIdFromToken(token: String): String? {
-        return try {
-            val decoded = verifier.verify(token)
-            decoded.getClaim("id").asString()
-        } catch (_: JWTVerificationException) {
-            null
-        }
-    }
-
-    /**
      * Obtiene el ID del usuario de un refresh token
      * @param token JWT refresh token
      * @return ID del usuario o null si es inválido
@@ -106,23 +92,5 @@ object JwtConfig {
         } catch (_: JWTVerificationException) {
             null
         }
-    }
-
-    /**
-     * Verifica si un token es válido
-     * @param token JWT token
-     * @return true si es válido, false si no
-     */
-    fun isAccessTokenValid(token: String): Boolean {
-        return getUserIdFromToken(token) != null
-    }
-
-    /**
-     * Verifica si un refresh token es válido
-     * @param token JWT refresh token
-     * @return true si es válido, false si no
-     */
-    fun isRefreshTokenValid(token: String): Boolean {
-        return getUserIdFromRefreshToken(token) != null
     }
 }

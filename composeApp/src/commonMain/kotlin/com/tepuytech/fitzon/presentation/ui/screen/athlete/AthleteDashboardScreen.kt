@@ -262,20 +262,20 @@ fun AthleteDashboardScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        dashboard.streakDays.let {
+                        dashboard.streakDays.let { streakDays ->
                             Row(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                if (it != null) {
-                                    if (it > 0) {
+                                if (streakDays != null) {
+                                    if (streakDays > 0) {
                                         Text(
                                             text = "🔥",
                                             fontSize = 24.sp
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
-
+                                        val label = if (streakDays == 1) "día consecutivo" else "dias consecutivos"
                                         Text(
-                                            text = "$it días consecutivos entrenando",
+                                            text = "$streakDays $label entrenando",
                                             fontSize = 16.sp,
                                             color = greenLight,
                                             fontWeight = FontWeight.SemiBold

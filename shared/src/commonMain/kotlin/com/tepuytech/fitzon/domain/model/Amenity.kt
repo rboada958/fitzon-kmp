@@ -3,8 +3,7 @@ package com.tepuytech.fitzon.domain.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class CoachInfo(
+data class Amenity(
     val name: String,
-    val specialty: String,
-    val icon: String
+    val icon: String,
 )

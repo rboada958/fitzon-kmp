@@ -42,6 +42,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,34 +55,61 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.tepuytech.fitzon.data.boxInfo
 import com.tepuytech.fitzon.domain.model.CoachInfo
+import com.tepuytech.fitzon.domain.model.box.BoxInfoResponse
 import com.tepuytech.fitzon.getPlatform
+import com.tepuytech.fitzon.presentation.state.BoxUiState
+import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
 import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
 import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
+import com.tepuytech.fitzon.presentation.viewmodel.BoxViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-class BoxInfoAthlete : Screen {
+class BoxInfoAthlete(val boxId: String) : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        val viewModel = getScreenModel<BoxViewModel>()
+        val uiState by viewModel.uiState.collectAsState()
 
-        BoxInfoAthleteScreen(
-            onBackClick = {
-                navigator.pop()
+        LaunchedEffect(Unit) {
+            viewModel.boxInfo(boxId)
+        }
+
+        when (uiState) {
+            is BoxUiState.Loading -> {
+                AthleteDashboardShimmer()
+                return
             }
-        )
+            is BoxUiState.SuccessBoxInfo -> {
+                val boxInfoState = (uiState as BoxUiState.SuccessBoxInfo).boxInfo
+                BoxInfoAthleteScreen(
+                    boxInfoState = boxInfoState,
+                    onBackClick = {
+                        navigator.pop()
+                    }
+                )
+
+            }
+            is BoxUiState.Error -> {
+                Text("Error: ${(uiState as BoxUiState.Error).message}")
+            }
+
+            else -> {}
+        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BoxInfoAthleteScreen(
+    boxInfoState: BoxInfoResponse = BoxInfoResponse(),
     onBackClick: () -> Unit = {}
 ) {
     var userRating by remember { mutableStateOf(0) }
@@ -172,7 +200,7 @@ fun BoxInfoAthleteScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
-                                text = boxInfo.name,
+                                text = boxInfoState.name,
                                 fontSize = 28.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -186,15 +214,15 @@ fun BoxInfoAthleteScreen(
                             ) {
                                 repeat(5) { index ->
                                     Text(
-                                        text = if (index < boxInfo.rating.toInt()) "★" else "☆",
+                                        text = if (index < boxInfoState.rating.toInt()) "★" else "☆",
                                         fontSize = 30.sp,
                                         modifier = Modifier.offset(y = (-3).dp),
-                                        color = if (index < boxInfo.rating.toInt()) Color(0xFFFFB84D) else textGray
+                                        color = if (index < boxInfoState.rating.toInt()) Color(0xFFFFB84D) else textGray
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "${boxInfo.rating}",
+                                    text = "${boxInfoState.rating}",
                                     fontSize = 25.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
@@ -202,7 +230,7 @@ fun BoxInfoAthleteScreen(
                             }
 
                             Text(
-                                text = "${boxInfo.totalReviews} valoraciones • ${boxInfo.totalMembers} miembros",
+                                text = "${boxInfoState.totalReviews} valoraciones • ${boxInfoState.totalMembers} miembros",
                                 fontSize = 14.sp,
                                 color = textGray,
                                 modifier = Modifier.padding(top = 4.dp)
@@ -232,7 +260,7 @@ fun BoxInfoAthleteScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Descripción
+                // Description
                 AnimatedVisibility(
                     visible = visible,
                     enter = fadeIn() + slideInVertically(
@@ -257,7 +285,7 @@ fun BoxInfoAthleteScreen(
                             color = cardBackground
                         ) {
                             Text(
-                                text = boxInfo.description,
+                                text = boxInfoState.description,
                                 fontSize = 15.sp,
                                 color = Color.White,
                                 lineHeight = 22.sp,
@@ -269,141 +297,149 @@ fun BoxInfoAthleteScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Galería de fotos
-                AnimatedVisibility(
-                    visible = visible,
-                    enter = fadeIn() + slideInVertically(
-                        animationSpec = tween(500, delayMillis = 150)
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 20.dp)
-                    ) {
-                        Text(
-                            text = "Galería",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
+                if (!boxInfoState.photos.isNullOrEmpty()) {
+                    // Galería de fotos
+                    AnimatedVisibility(
+                        visible = visible,
+                        enter = fadeIn() + slideInVertically(
+                            animationSpec = tween(500, delayMillis = 150)
                         )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 20.dp)
                         ) {
-                            boxInfo.photos.forEach { photo ->
-                                Surface(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .aspectRatio(1f),
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = cardBackground
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text(photo, fontSize = 40.sp)
+                            Text(
+                                text = "Galería",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                boxInfoState.photos?.forEach { photo ->
+                                    Surface(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .aspectRatio(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = cardBackground
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(photo.url, fontSize = 40.sp)
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                }
 
                 // Coaches
-                AnimatedVisibility(
-                    visible = visible,
-                    enter = fadeIn() + slideInVertically(
-                        animationSpec = tween(500, delayMillis = 200)
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 20.dp)
-                    ) {
-                        Text(
-                            text = "👨‍🏫 Entrenadores (${boxInfo.coaches.size})",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                if (!boxInfoState.coaches.isNullOrEmpty()) {
+                    boxInfoState.coaches?.let {
+                        AnimatedVisibility(
+                            visible = visible,
+                            enter = fadeIn() + slideInVertically(
+                                animationSpec = tween(500, delayMillis = 200)
+                            )
                         ) {
-                            boxInfo.coaches.forEach { coach ->
-                                CoachCard(
-                                    coach = coach,
-                                    cardBackground = cardBackground,
-                                    textGray = textGray
+                            Column(
+                                modifier = Modifier.padding(horizontal = 20.dp)
+                            ) {
+                                Text(
+                                    text = "👨‍🏫 Entrenadores (${it.size})",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
                                 )
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    it.forEach { coach ->
+                                        CoachCard(
+                                            coach = coach,
+                                            cardBackground = cardBackground,
+                                            textGray = textGray
+                                        )
+                                    }
+                                }
                             }
                         }
+
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Amenidades
-                AnimatedVisibility(
-                    visible = visible,
-                    enter = fadeIn() + slideInVertically(
-                        animationSpec = tween(500, delayMillis = 250)
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 20.dp)
-                    ) {
-                        Text(
-                            text = "Instalaciones",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
+                if (!boxInfoState.amenities.isNullOrEmpty()) {
+                    // Amenidades
+                    AnimatedVisibility(
+                        visible = visible,
+                        enter = fadeIn() + slideInVertically(
+                            animationSpec = tween(500, delayMillis = 250)
                         )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            color = cardBackground
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 20.dp)
                         ) {
-                            Column(
-                                modifier = Modifier.padding(20.dp)
+                            Text(
+                                text = "Instalaciones",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                color = cardBackground
                             ) {
-                                boxInfo.amenities.chunked(2).forEach { row ->
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                                    ) {
-                                        row.forEach { amenity ->
-                                            Row(
-                                                modifier = Modifier.weight(1f),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Text(
-                                                    text = amenity,
-                                                    fontSize = 14.sp,
-                                                    color = Color.White
-                                                )
+                                Column(
+                                    modifier = Modifier.padding(20.dp)
+                                ) {
+                                    boxInfoState.amenities?.chunked(2)?.forEach { row ->
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                        ) {
+                                            row.forEach { amenity ->
+                                                Row(
+                                                    modifier = Modifier.weight(1f),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = amenity.name,
+                                                        fontSize = 14.sp,
+                                                        color = Color.White
+                                                    )
+                                                }
+                                            }
+                                            if (row.size == 1) {
+                                                Spacer(modifier = Modifier.weight(1f))
                                             }
                                         }
-                                        if (row.size == 1) {
-                                            Spacer(modifier = Modifier.weight(1f))
+                                        if (row != boxInfoState.amenities?.chunked(2)?.last()) {
+                                            Spacer(modifier = Modifier.height(12.dp))
                                         }
-                                    }
-                                    if (row != boxInfo.amenities.chunked(2).last()) {
-                                        Spacer(modifier = Modifier.height(12.dp))
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
 
                 // Información de contacto
                 AnimatedVisibility(
@@ -432,22 +468,22 @@ fun BoxInfoAthleteScreen(
                             Column(
                                 modifier = Modifier.padding(20.dp)
                             ) {
-                                ContactInfoRow("📍", "Dirección", boxInfo.address)
+                                ContactInfoRow("📍", "Dirección", boxInfoState.address)
                                 HorizontalDivider(
                                     modifier = Modifier.padding(vertical = 12.dp),
                                     color = Color(0xFF1B4332)
                                 )
-                                ContactInfoRow("📱", "Teléfono", boxInfo.phone)
+                                ContactInfoRow("📱", "Teléfono", boxInfoState.phone)
                                 HorizontalDivider(
                                     modifier = Modifier.padding(vertical = 12.dp),
                                     color = Color(0xFF1B4332)
                                 )
-                                ContactInfoRow("📧", "Email", boxInfo.email)
+                                ContactInfoRow("📧", "Email", boxInfoState.email)
                                 HorizontalDivider(
                                     modifier = Modifier.padding(vertical = 12.dp),
                                     color = Color(0xFF1B4332)
                                 )
-                                ContactInfoRow("🕐", "Horario", boxInfo.schedule)
+                                ContactInfoRow("🕐", "Horario", boxInfoState.schedule)
                             }
                         }
 
@@ -506,7 +542,7 @@ fun BoxInfoAthleteScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "¿Cómo ha sido tu experiencia en ${boxInfo.name}?",
+                        text = "¿Cómo ha sido tu experiencia en ${boxInfoState.name}?",
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center,
                         color = textGray

@@ -32,6 +32,8 @@ val viewModelModule = module {
     factory<BoxViewModel> {
         BoxViewModel(
             boxDashboardUseCase = get(),
+            boxInfoUseCase = get(),
+            boxProfileUseCase = get(),
             logoutUseCase = get()
         )
     }

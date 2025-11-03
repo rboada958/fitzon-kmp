@@ -7,27 +7,39 @@ import com.tepuytech.fitzon.domain.model.athletes.UpdateAthleteProfileRequest
 import com.tepuytech.fitzon.domain.model.athletes.UpdateAthleteProfileResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.http.HttpStatusCode
 
 class AthleteApi(
     private val httpClient: HttpClient,
     private val sessionManager: SessionManager
 ) {
     suspend fun athleteDashboard() : AthleteDashboardResponse {
-        val token = sessionManager.getTokenSync()
-        return httpClient.get("/api/athletes/dashboard") {
-            header("Authorization", "Bearer $token")
-        }.body()
+        val response = httpClient.get("/api/athletes/dashboard") {
+            header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
+        }
+
+        if (response.status == HttpStatusCode.Unauthorized) {
+            throw ClientRequestException(response, "Unauthorized")
+        }
+
+        return response.body()
     }
 
     suspend fun athleteProfile() : AthleteProfileResponse {
-        val token = sessionManager.getTokenSync()
-        return httpClient.get("/api/athletes/profile") {
-            header("Authorization", "Bearer $token")
-        }.body()
+        val response = httpClient.get("/api/athletes/profile") {
+            header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
+        }
+
+        if (response.status == HttpStatusCode.Unauthorized) {
+            throw ClientRequestException(response, "Unauthorized")
+        }
+
+        return response.body()
     }
 
     suspend fun updateAthleteProfile(
@@ -35,11 +47,16 @@ class AthleteApi(
         weight: Double,
         height: Double
     ) : UpdateAthleteProfileResponse {
-        val token = sessionManager.getTokenSync()
         val userId = sessionManager.getUserIdSync()
-        return httpClient.put("/api/athletes/profile") {
-            header("Authorization", "Bearer $token")
+        val response = httpClient.put("/api/athletes/profile") {
+            header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
             setBody(UpdateAthleteProfileRequest(userId, age, weight, height))
-        }.body()
+        }
+
+        if (response.status == HttpStatusCode.Unauthorized) {
+            throw ClientRequestException(response, "Unauthorized")
+        }
+
+        return response.body()
     }
 }

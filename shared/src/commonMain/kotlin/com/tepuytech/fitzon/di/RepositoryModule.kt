@@ -20,7 +20,11 @@ val repositoryModule = module {
     }
 
     single<AthleteRepository> {
-        AthleteRepositoryImpl(apiService = get())
+        AthleteRepositoryImpl(
+            api = get(),
+            apiService = get(),
+            sessionManager = get()
+        )
     }
 
     single<WorkoutRepository> {
@@ -29,6 +33,7 @@ val repositoryModule = module {
 
     single<BoxRepository> {
         BoxRepositoryImpl(
+            api = get(),
             apiService = get(),
             sessionManager = get()
         )

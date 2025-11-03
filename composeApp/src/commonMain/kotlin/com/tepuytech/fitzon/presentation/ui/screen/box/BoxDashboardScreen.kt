@@ -68,32 +68,31 @@ class BoxDashboard : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = getScreenModel<BoxViewModel>()
         val uiState by viewModel.uiState.collectAsState()
-        var boxState by mutableStateOf(BoxDashboardResponse())
 
         LaunchedEffect(Unit) {
             viewModel.boxDashboard()
         }
 
-        LaunchedEffect(uiState) {
-            when (uiState) {
-                is BoxUiState.Success -> {
-                    boxState = (uiState as BoxUiState.Success).dashboard
-
-                }
-                else -> {}
+        when (uiState) {
+            is BoxUiState.Loading -> {
+                AthleteDashboardShimmer()
+                return
             }
-        }
+            is BoxUiState.Success -> {
+                val boxState = (uiState as BoxUiState.Success).dashboard
+                val sortedClasses = boxState.todayClasses?.sortedBy { parseTime(it.time) } ?: emptyList()
+                BoxDashboardScreen(
+                    boxState = boxState.copy(todayClasses = sortedClasses),
+                    onNotificationClick = { navigator.push(NotificationCenterBox()) },
+                    onProfileClick = { navigator.push(BoxProfile()) }
+                )
+            }
+            is BoxUiState.Error -> {
+                Text("Error: ${(uiState as BoxUiState.Error).message}")
+            }
 
-        if (uiState is BoxUiState.Loading) {
-            AthleteDashboardShimmer()
-            return
+            else -> {}
         }
-
-        BoxDashboardScreen(
-            boxState = boxState,
-            onNotificationClick = { navigator.push(NotificationCenterBox()) },
-            onProfileClick = { navigator.push(BoxProfile()) }
-        )
     }
 }
 @OptIn(ExperimentalMaterial3Api::class)
@@ -122,8 +121,10 @@ fun BoxDashboardScreen(
                                 color = Color.White
                             )
                         }
+                        val count = boxState.boxStats?.activeMembersToday ?: 0
+                        val label = if (count == 1) "atleta activo" else "atletas activos"
                         Text(
-                            text = "${boxState.boxStats?.activeMembersToday} atletas activos hoy",
+                            text = "$count $label hoy",
                             fontSize = 12.sp,
                             color = greenLight
                         )
@@ -227,7 +228,7 @@ fun BoxDashboardScreen(
                         Column(
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            boxState.todayClasses?.take(3)?.forEach { classItem ->
+                            boxState.todayClasses?.take(5)?.forEach { classItem ->
                                 ClassCard(
                                     classSchedule = classItem,
                                     cardBackground = cardBackground,
@@ -401,6 +402,18 @@ fun TopAthleteCard(
             }
         }
     }
+}
+
+private fun parseTime(timeString: String): Int {
+    val parts = timeString.split(":")
+    var hours = parts[0].toInt()
+    val minutes = parts[1].split(" ")[0].toInt()
+    val isPM = timeString.contains("PM")
+
+    if (isPM && hours != 12) hours += 12
+    if (!isPM && hours == 12) hours = 0
+
+    return hours * 60 + minutes
 }
 
 @Preview

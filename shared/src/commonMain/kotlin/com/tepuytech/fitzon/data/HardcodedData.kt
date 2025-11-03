@@ -7,74 +7,15 @@ import com.tepuytech.fitzon.domain.enums.MemberStatus
 import com.tepuytech.fitzon.domain.enums.NotificationPriority
 import com.tepuytech.fitzon.domain.enums.NotificationType
 import com.tepuytech.fitzon.domain.enums.PaymentStatus
-import com.tepuytech.fitzon.domain.model.BoxInfo
 import com.tepuytech.fitzon.domain.model.BoxNotification
 import com.tepuytech.fitzon.domain.model.BoxProfile
-import com.tepuytech.fitzon.domain.model.BoxStats
-import com.tepuytech.fitzon.domain.model.ClassSchedule
 import com.tepuytech.fitzon.domain.model.ClassSession
 import com.tepuytech.fitzon.domain.model.Coach
-import com.tepuytech.fitzon.domain.model.CoachInfo
 import com.tepuytech.fitzon.domain.model.DayWorkouts
 import com.tepuytech.fitzon.domain.model.Member
 import com.tepuytech.fitzon.domain.model.Notification
-import com.tepuytech.fitzon.domain.model.TopAthlete
 import com.tepuytech.fitzon.domain.model.WorkoutItem
 import com.tepuytech.fitzon.domain.model.WorkoutOption
-
-/*BoxDashboardScreen*/
-
-const val boxName = "Soldier Box"
-val boxStats = BoxStats(
-    activeMembersToday = 15,
-    totalMembers = 120,
-    newMembersThisMonth = 8,
-    pendingRenewals = 5
-)
-val todayClasses = listOf(
-    ClassSchedule(1, "06:00 AM", "Morning WOD", "Coach María", 12, 15),
-    ClassSchedule(2, "09:00 AM", "CrossFit Basics", "Coach Carlos", 8, 12, isNow = true),
-    ClassSchedule(3, "12:00 PM", "Noon Power", "Coach Ana", 15, 20),
-    ClassSchedule(4, "05:00 PM", "Evening Burn", "Coach Pedro", 18, 20),
-    ClassSchedule(5, "07:00 PM", "Night Warriors", "Coach Juan", 10, 15)
-)
-val topAthletes = listOf(
-    TopAthlete("María García", "Atleta del Mes", "🏆"),
-    TopAthlete("Carlos López", "Mejor Progreso", "📈"),
-    TopAthlete("Ana Martínez", "Más Consistente", "🔥")
-)
-
-/*BoxInfoAthleteScreen*/
-
-val boxInfo = BoxInfo(
-    name = "Soldier Box",
-    description = "El mejor BOX de CrossFit en la ciudad. Contamos con entrenadores certificados Level 1 y Level 2, equipamiento de primera calidad importado de Rogue y Eleiko, y una comunidad increíble que te motivará a superar tus límites cada día.",
-    address = "Av. Principal #123, Col. Centro, Ciudad de México",
-    phone = "+52 123 456 7890",
-    email = "info@crossfitcentral.com",
-    schedule = "Lun-Vie: 6:00 AM - 10:00 PM\nSáb-Dom: 8:00 AM - 6:00 PM",
-    rating = 4.8f,
-    totalReviews = 98,
-    totalMembers = 120,
-    coaches = listOf(
-        CoachInfo("María García", "CrossFit Level 2", "👩‍🏫"),
-        CoachInfo("Carlos López", "Olympic Lifting", "👨‍🏫"),
-        CoachInfo("Ana Martínez", "Gymnastics", "👩‍🏫"),
-        CoachInfo("Pedro Silva", "CrossFit Level 1", "👨‍🏫"),
-        CoachInfo("Laura Torres", "Nutrition Coach", "👩‍🏫")
-    ),
-    amenities = listOf(
-        "🚿 Regaderas",
-        "🔒 Casilleros",
-        "🅿️ Estacionamiento",
-        "📶 WiFi Gratis",
-        "🏋️ Equipamiento Rogue",
-        "❄️ Aire Acondicionado",
-        "🎵 Sistema de Sonido",
-        "☕ Área de Descanso"
-    ),
-    photos = listOf("🏢", "🏋️", "💪", "🤸")
-)
 
 /*BoxProfileScreen*/
 
@@ -90,11 +31,6 @@ val boxProfile = BoxProfile(
     classes = 24,
     rating = 4.8f,
     description = "El mejor BOX de CrossFit en la ciudad. Entrenadores certificados, equipamiento de primera calidad y una comunidad increíble."
-)
-val boxStatsList = listOf(
-    Triple("👥", "${boxProfile.totalMembers}", "Miembros"),
-    Triple("👨‍🏫", "${boxProfile.coaches}", "Coaches"),
-    Triple("📅", "${boxProfile.classes}", "Clases")
 )
 
 /*ManageCoachesScreen*/
