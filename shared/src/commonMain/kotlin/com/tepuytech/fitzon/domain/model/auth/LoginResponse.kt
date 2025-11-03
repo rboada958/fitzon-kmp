@@ -4,7 +4,8 @@ import com.tepuytech.fitzon.domain.model.User
 import kotlinx.serialization.Serializable
 @Serializable
 data class LoginResponse(
-    val token: String? = null,
+    val accessToken: String? = null,
+    val refreshToken: String? = null,
     val user: User? = null,
     val message: String? = null
 )

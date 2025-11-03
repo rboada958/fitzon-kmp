@@ -2,6 +2,7 @@ package com.tepuytech.fitzon.di
 
 import com.tepuytech.fitzon.domain.usecase.AthleteDashboardUseCase
 import com.tepuytech.fitzon.domain.usecase.AthleteProfileUseCase
+import com.tepuytech.fitzon.domain.usecase.BoxDashboardUseCase
 import com.tepuytech.fitzon.domain.usecase.IsUserLoggedInUseCase
 import com.tepuytech.fitzon.domain.usecase.LoginUseCase
 import com.tepuytech.fitzon.domain.usecase.LogoutUseCase
@@ -13,8 +14,7 @@ import org.koin.dsl.module
 val useCaseModule = module {
     factory<LoginUseCase> {
         LoginUseCase(
-            authRepository = get(),
-            sessionManager = get()
+            authRepository = get()
         )
     }
     factory {
@@ -50,6 +50,12 @@ val useCaseModule = module {
     factory {
         WorkoutOfTheDayUseCase(
             workoutRepository = get()
+        )
+    }
+
+    factory {
+        BoxDashboardUseCase(
+            boxRepository = get()
         )
     }
 }

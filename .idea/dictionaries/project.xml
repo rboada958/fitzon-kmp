@@ -11,12 +11,14 @@
       <w>aprobar</w>
       <w>asignado</w>
       <w>atleta</w>
+      <w>atletas</w>
       <w>años</w>
       <w>buscar</w>
       <w>calorías</w>
       <w>cambiar</w>
       <w>cancelar</w>
       <w>centenario</w>
+      <w>clases</w>
       <w>completado</w>
       <w>completados</w>
       <w>configuración</w>
@@ -25,13 +27,17 @@
       <w>contar</w>
       <w>continuar</w>
       <w>contraseña</w>
+      <w>corta</w>
       <w>creado</w>
       <w>crear</w>
       <w>cuenta</w>
+      <w>curso</w>
       <w>cuántos</w>
       <w>datos</w>
       <w>desde</w>
+      <w>destacados</w>
       <w>disponible</w>
+      <w>duración</w>
       <w>edad</w>
       <w>editar</w>
       <w>ejercicios</w>
@@ -51,6 +57,7 @@
       <w>información</w>
       <w>ingreso</w>
       <w>iniciar</w>
+      <w>inválido</w>
       <w>listar</w>
       <w>logros</w>
       <w>límites</w>
@@ -60,6 +67,7 @@
       <w>minutos</w>
       <w>nombre</w>
       <w>obtener</w>
+      <w>obtiene</w>
       <w>olvidaste</w>
       <w>otros</w>
       <w>pendiente</w>
@@ -84,9 +92,12 @@
       <w>sido</w>
       <w>supera</w>
       <w>tienes</w>
+      <w>todas</w>
       <w>términos</w>
+      <w>usuario</w>
       <w>verificar</w>
       <w>volver</w>
+      <w>válido</w>
     </words>
   </dictionary>
 </component>

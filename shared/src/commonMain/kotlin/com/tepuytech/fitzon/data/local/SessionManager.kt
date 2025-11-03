@@ -11,7 +11,8 @@ class SessionManager(settings: ObservableSettings) {
     private val flowSettings: FlowSettings = settings.toFlowSettings()
 
     companion object {
-        private const val TOKEN_KEY = "auth_token"
+        private const val ACCESS_TOKEN_KEY = "access_token"
+        private const val REFRESH_TOKEN_KEY = "refresh_token"
         private const val IS_LOGGED_IN_KEY = "is_logged_in"
         private const val USER_ID_KEY = "user_id"
         private const val USER_EMAIL_KEY = "user_email"
@@ -25,15 +26,23 @@ class SessionManager(settings: ObservableSettings) {
     }
 
     @OptIn(ExperimentalSettingsApi::class)
+    suspend fun updateTokens(accessToken: String, refreshToken: String) {
+        flowSettings.putString(ACCESS_TOKEN_KEY, accessToken)
+        flowSettings.putString(REFRESH_TOKEN_KEY, refreshToken)
+    }
+
+    @OptIn(ExperimentalSettingsApi::class)
     suspend fun saveSession(
-        token: String,
+        accessToken: String,
+        refreshToken: String,
         userId: String?,
         email: String?,
         name: String?,
         role: String?,
         avatar: String?
     ) {
-        flowSettings.putString(TOKEN_KEY, token)
+        flowSettings.putString(ACCESS_TOKEN_KEY, accessToken)
+        flowSettings.putString(REFRESH_TOKEN_KEY, refreshToken)
         flowSettings.putBoolean(IS_LOGGED_IN_KEY, true)
         userId?.let { flowSettings.putString(USER_ID_KEY, it) }
         email?.let { flowSettings.putString(USER_EMAIL_KEY, it) }
@@ -44,7 +53,12 @@ class SessionManager(settings: ObservableSettings) {
 
     @OptIn(ExperimentalSettingsApi::class)
     suspend fun getTokenSync(): String? {
-        return flowSettings.getStringOrNull(TOKEN_KEY)
+        return flowSettings.getStringOrNull(ACCESS_TOKEN_KEY)
+    }
+
+    @OptIn(ExperimentalSettingsApi::class)
+    suspend fun getRefreshTokenSync(): String? {
+        return flowSettings.getStringOrNull(REFRESH_TOKEN_KEY)
     }
 
     @OptIn(ExperimentalSettingsApi::class)

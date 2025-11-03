@@ -2,9 +2,11 @@ package com.tepuytech.fitzon.di
 
 import com.tepuytech.fitzon.data.repository.AthleteRepositoryImpl
 import com.tepuytech.fitzon.data.repository.AuthRepositoryImpl
+import com.tepuytech.fitzon.data.repository.BoxRepositoryImpl
 import com.tepuytech.fitzon.data.repository.WorkoutRepositoryImpl
 import com.tepuytech.fitzon.domain.repository.AthleteRepository
 import com.tepuytech.fitzon.domain.repository.AuthRepository
+import com.tepuytech.fitzon.domain.repository.BoxRepository
 import com.tepuytech.fitzon.domain.repository.WorkoutRepository
 import org.koin.dsl.module
 
@@ -23,5 +25,12 @@ val repositoryModule = module {
 
     single<WorkoutRepository> {
         WorkoutRepositoryImpl(apiService = get())
+    }
+
+    single<BoxRepository> {
+        BoxRepositoryImpl(
+            apiService = get(),
+            sessionManager = get()
+        )
     }
 }
