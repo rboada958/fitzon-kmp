@@ -1,6 +1,7 @@
 package com.tepuytech.fitzon.di
 
 import com.tepuytech.fitzon.presentation.viewmodel.AthleteViewModel
+import com.tepuytech.fitzon.presentation.viewmodel.BoxViewModel
 import com.tepuytech.fitzon.presentation.viewmodel.LoginViewModel
 import com.tepuytech.fitzon.presentation.viewmodel.WorkoutViewModel
 import org.koin.dsl.module
@@ -25,6 +26,13 @@ val viewModelModule = module {
     factory<WorkoutViewModel> {
         WorkoutViewModel(
             workoutOfTheDayUseCase = get()
+        )
+    }
+
+    factory<BoxViewModel> {
+        BoxViewModel(
+            boxDashboardUseCase = get(),
+            logoutUseCase = get()
         )
     }
 }

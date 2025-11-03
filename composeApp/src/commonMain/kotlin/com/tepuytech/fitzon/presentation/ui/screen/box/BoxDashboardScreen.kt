@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -32,6 +31,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,28 +45,52 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.tepuytech.fitzon.data.boxName
-import com.tepuytech.fitzon.data.boxStats
-import com.tepuytech.fitzon.data.todayClasses
-import com.tepuytech.fitzon.data.topAthletes
 import com.tepuytech.fitzon.domain.model.ClassSchedule
 import com.tepuytech.fitzon.domain.model.TopAthlete
+import com.tepuytech.fitzon.domain.model.box.BoxDashboardResponse
+import com.tepuytech.fitzon.presentation.state.BoxUiState
+import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
 import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
 import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
 import com.tepuytech.fitzon.presentation.ui.screen.NotificationCenterBox
+import com.tepuytech.fitzon.presentation.viewmodel.BoxViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 class BoxDashboard : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        val viewModel = getScreenModel<BoxViewModel>()
+        val uiState by viewModel.uiState.collectAsState()
+        var boxState by mutableStateOf(BoxDashboardResponse())
+
+        LaunchedEffect(Unit) {
+            viewModel.boxDashboard()
+        }
+
+        LaunchedEffect(uiState) {
+            when (uiState) {
+                is BoxUiState.Success -> {
+                    boxState = (uiState as BoxUiState.Success).dashboard
+
+                }
+                else -> {}
+            }
+        }
+
+        if (uiState is BoxUiState.Loading) {
+            AthleteDashboardShimmer()
+            return
+        }
 
         BoxDashboardScreen(
+            boxState = boxState,
             onNotificationClick = { navigator.push(NotificationCenterBox()) },
             onProfileClick = { navigator.push(BoxProfile()) }
         )
@@ -75,6 +99,7 @@ class BoxDashboard : Screen {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BoxDashboardScreen(
+    boxState: BoxDashboardResponse = BoxDashboardResponse(),
     onNotificationClick: () -> Unit = {},
     onProfileClick: () -> Unit = {}
 ) {
@@ -89,14 +114,16 @@ fun BoxDashboardScreen(
             TopAppBar(
                 title = {
                     Column {
+                        boxState.boxName?.let {
+                            Text(
+                                text = it,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
                         Text(
-                            text = boxName,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Text(
-                            text = "${boxStats.activeMembersToday} atletas activos hoy",
+                            text = "${boxState.boxStats?.activeMembersToday} atletas activos hoy",
                             fontSize = 12.sp,
                             color = greenLight
                         )
@@ -151,21 +178,7 @@ fun BoxDashboardScreen(
                 )
             )
         },
-        containerColor = Color.Transparent,
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { /* Crear anuncio */ },
-                containerColor = greenPrimary,
-                contentColor = Color(0xFF081C15)
-            ) {
-                Text("📢", fontSize = 20.sp)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    "Publicar Anuncio",
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -214,7 +227,7 @@ fun BoxDashboardScreen(
                         Column(
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            todayClasses.take(3).forEach { classItem ->
+                            boxState.todayClasses?.take(3)?.forEach { classItem ->
                                 ClassCard(
                                     classSchedule = classItem,
                                     cardBackground = cardBackground,
@@ -248,7 +261,7 @@ fun BoxDashboardScreen(
                         Column(
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            topAthletes.forEach { athlete ->
+                            boxState.topAthletes?.forEach { athlete ->
                                 TopAthleteCard(
                                     athlete = athlete,
                                     cardBackground = cardBackground,

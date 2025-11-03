@@ -4,7 +4,9 @@ import com.tepuytech.fitzon.data.AuthRepository
 import com.tepuytech.fitzon.models.AuthRequest
 import com.tepuytech.fitzon.models.AuthResponse
 import com.tepuytech.fitzon.models.ErrorResponse
+import com.tepuytech.fitzon.models.RefreshTokenRequest
 import com.tepuytech.fitzon.models.RegisterRequest
+import com.tepuytech.fitzon.models.TokenResponse
 import com.tepuytech.fitzon.models.UpdateProfileRequest
 import com.tepuytech.fitzon.models.UserResponse
 import com.tepuytech.fitzon.utils.JwtConfig
@@ -56,8 +58,12 @@ fun Route.authRoutes(repo: AuthRepository) {
             if (user == null) {
                 call.respond(HttpStatusCode.Conflict, ErrorResponse("User already exists or invalid data"))
             } else {
-                val token = JwtConfig.makeToken(user.id)
-                call.respond(HttpStatusCode.Created, AuthResponse(token, user))
+                val tokens = JwtConfig.generateTokenPair(user.id)  // ← Cambio aquí
+                call.respond(HttpStatusCode.Created, AuthResponse(
+                    accessToken = tokens.accessToken,
+                    refreshToken = tokens.refreshToken,
+                    user = user
+                ))
             }
         }
 
@@ -73,12 +79,42 @@ fun Route.authRoutes(repo: AuthRepository) {
             if (user == null) {
                 call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid credentials"))
             } else {
-                val token = JwtConfig.makeToken(user.id)
+                val tokens = JwtConfig.generateTokenPair(user.id)  // ← Cambio aquí
                 call.respond(
                     HttpStatusCode.OK,
-                    AuthResponse(token, user)
+                    AuthResponse(
+                        accessToken = tokens.accessToken,
+                        refreshToken = tokens.refreshToken,
+                        user = user
+                    )
                 )
             }
+        }
+
+        post("/refresh") {
+            val request = try {
+                call.receive<RefreshTokenRequest>()
+            } catch (_: Exception) {
+                call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid request format"))
+                return@post
+            }
+
+            val userId = JwtConfig.getUserIdFromRefreshToken(request.refreshToken)
+
+            if (userId == null) {
+                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid or expired refresh token"))
+                return@post
+            }
+
+            val newTokens = JwtConfig.generateTokenPair(userId)
+            call.respond(
+                HttpStatusCode.OK,
+                TokenResponse(
+                    accessToken = newTokens.accessToken,
+                    refreshToken = newTokens.refreshToken,
+                    expiresIn = newTokens.expiresIn
+                )
+            )
         }
 
         authenticate("auth-jwt") {
