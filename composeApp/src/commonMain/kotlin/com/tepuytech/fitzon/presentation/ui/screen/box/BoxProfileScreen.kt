@@ -92,7 +92,7 @@ class BoxProfile : Screen {
                     boxProfileState = boxProfileState,
                     onBackClick = { navigator.pop() },
                     onEditClick = {
-                        navigator.push(EditBoxProfile())
+                        navigator.push(EditBoxProfile(boxProfileState))
                     },
                     onManageWorkoutsClick = {
                         navigator.push(ManageWorkouts())

@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -28,6 +29,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,41 +43,147 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.tepuytech.fitzon.data.boxProfile
+import com.tepuytech.fitzon.domain.model.box.BoxProfileResponse
+import com.tepuytech.fitzon.domain.model.box.UpdateBoxProfileRequest
 import com.tepuytech.fitzon.getPlatform
+import com.tepuytech.fitzon.presentation.state.BoxUiState
 import com.tepuytech.fitzon.presentation.ui.composable.FitzonTopAppBar
 import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
 import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
+import com.tepuytech.fitzon.presentation.viewmodel.BoxViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-class EditBoxProfile : Screen {
+class EditBoxProfile(val boxProfile: BoxProfileResponse) : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        val vieModel = getScreenModel<BoxViewModel>()
+        val uiState by vieModel.uiState.collectAsState()
+
+        var formData by remember { mutableStateOf(boxProfile) }
+        var showSuccessDialog by remember { mutableStateOf(false) }
+
+        LaunchedEffect(uiState) {
+            when (uiState) {
+                is BoxUiState.SuccessUpdateBoxProfile -> {
+                    val updatedProfile = (uiState as BoxUiState.SuccessUpdateBoxProfile).updateBoxProfile
+                    formData = formData.copy(
+                        name = updatedProfile.name,
+                        phone = updatedProfile.phone,
+                        address = updatedProfile.location,
+                        description = updatedProfile.description
+                    )
+                    showSuccessDialog = true
+                }
+
+                is BoxUiState.Error -> {}
+
+                else -> Unit
+            }
+        }
 
         EditBoxProfileScreen(
-            onBackClick = { navigator.pop() }
+            profile = formData,
+            onBackClick = { navigator.pop() },
+            updateBoxProfileOnClick = {
+                val updateBoxProfileRequest = UpdateBoxProfileRequest(
+                    name = it.name,
+                    phone = it.phone,
+                    location = it.address,
+                    description = it.description,
+                    schedule = "Lun-Vie: 6:00 AM - 10:00 PM\\nSáb-Dom: 8:00 AM - 6:00 PM",
+                    amenities = listOf(),
+                    photos = listOf(),
+                    logoUrl = ""
+                )
+                vieModel.updateBoxProfile(updateBoxProfileRequest)
+            }
         )
+
+        if (uiState is BoxUiState.Loading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = greenLight,
+                    strokeWidth = 4.dp,
+                    modifier = Modifier.size(60.dp)
+                )
+            }
+        }
+
+        if (showSuccessDialog) {
+            AlertDialog(
+                onDismissRequest = { showSuccessDialog = false },
+                title = {
+                    Text(
+                        text = "✓ BOX Actualizado",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp
+                    )
+                },
+                text = {
+                    Column {
+                        Text("Los cambios de tu BOX han sido guardados exitosamente", fontSize = 15.sp)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFF0D2818)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp)
+                            ) {
+                                BoxUpdateRow("🏋️", "Nombre", formData.name)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                BoxUpdateRow("📞", "Teléfono", formData.phone)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                BoxUpdateRow("📍", "Dirección", formData.address)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                BoxUpdateRow("📅", "Año", formData.foundedYear)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = { showSuccessDialog = false },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = greenPrimary
+                        )
+                    ) {
+                        Text("Volver", color = Color(0xFF081C15))
+                    }
+                },
+                containerColor = Color(0xFF1B4332),
+                titleContentColor = Color.White,
+                textContentColor = Color.White
+            )
+        }
     }
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditBoxProfileScreen(
-    onBackClick: () -> Unit = {}
+    profile: BoxProfileResponse = BoxProfileResponse(),
+    onBackClick: () -> Unit = {},
+    updateBoxProfileOnClick: (BoxProfileResponse) -> Unit = {}
 ) {
 
     var formData by remember {
         mutableStateOf(
-            boxProfile
+            profile
         )
     }
-
-    var showSuccessDialog by remember { mutableStateOf(false) }
 
     val isFormValid = formData.name.isNotEmpty() &&
             formData.email.isNotEmpty() &&
@@ -383,13 +492,13 @@ fun EditBoxProfileScreen(
                             modifier = Modifier.padding(bottom = 12.dp)
                         )
 
-                        InfoReadOnlyRow("👥", "Miembros Totales:", "120")
+                        InfoReadOnlyRow("👥", "Miembros Totales:", "${formData.totalMembers}")
                         Spacer(modifier = Modifier.height(8.dp))
-                        InfoReadOnlyRow("✅", "Miembros Activos:", "98")
+                        InfoReadOnlyRow("✅", "Miembros Activos:", "${formData.activeMembers}")
                         Spacer(modifier = Modifier.height(8.dp))
-                        InfoReadOnlyRow("⭐", "Rating Promedio:", "4.8")
+                        InfoReadOnlyRow("⭐", "Rating Promedio:", "${formData.rating}")
                         Spacer(modifier = Modifier.height(8.dp))
-                        InfoReadOnlyRow("👨‍🏫", "Coaches:", "5")
+                        InfoReadOnlyRow("👨‍🏫", "Coaches:", "${formData.coaches}")
                     }
                 }
 
@@ -416,7 +525,7 @@ fun EditBoxProfileScreen(
                     }
 
                     Button(
-                        onClick = { showSuccessDialog = true },
+                        onClick = { updateBoxProfileOnClick(formData) },
                         enabled = isFormValid,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
@@ -437,56 +546,6 @@ fun EditBoxProfileScreen(
                 Spacer(modifier = Modifier.height(80.dp))
             }
         }
-    }
-
-    // Diálogo de éxito
-    if (showSuccessDialog) {
-        AlertDialog(
-            onDismissRequest = { showSuccessDialog = false },
-            title = {
-                Text(
-                    text = "✓ BOX Actualizado",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp
-                )
-            },
-            text = {
-                Column {
-                    Text("Los cambios de tu BOX han sido guardados exitosamente", fontSize = 15.sp)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFF0D2818)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(12.dp)
-                        ) {
-                            BoxUpdateRow("🏋️", "Nombre", formData.name)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            BoxUpdateRow("📞", "Teléfono", formData.phone)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            BoxUpdateRow("📍", "Dirección", formData.address)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            BoxUpdateRow("📅", "Año", formData.foundedYear)
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { showSuccessDialog = false },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = greenPrimary
-                    )
-                ) {
-                    Text("Volver", color = Color(0xFF081C15))
-                }
-            },
-            containerColor = Color(0xFF1B4332),
-            titleContentColor = Color.White,
-            textContentColor = Color.White
-        )
     }
 }
 

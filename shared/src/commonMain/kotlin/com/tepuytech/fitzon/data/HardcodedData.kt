@@ -8,7 +8,6 @@ import com.tepuytech.fitzon.domain.enums.NotificationPriority
 import com.tepuytech.fitzon.domain.enums.NotificationType
 import com.tepuytech.fitzon.domain.enums.PaymentStatus
 import com.tepuytech.fitzon.domain.model.BoxNotification
-import com.tepuytech.fitzon.domain.model.BoxProfile
 import com.tepuytech.fitzon.domain.model.ClassSession
 import com.tepuytech.fitzon.domain.model.Coach
 import com.tepuytech.fitzon.domain.model.DayWorkouts
@@ -16,22 +15,6 @@ import com.tepuytech.fitzon.domain.model.Member
 import com.tepuytech.fitzon.domain.model.Notification
 import com.tepuytech.fitzon.domain.model.WorkoutItem
 import com.tepuytech.fitzon.domain.model.WorkoutOption
-
-/*BoxProfileScreen*/
-
-val boxProfile = BoxProfile(
-    name = "Soldier Box",
-    email = "info@soldierbox.com",
-    phone = "+58 412 103 8497",
-    address = "Av. Principal #123, Col. Centro",
-    foundedYear = "2020",
-    totalMembers = 120,
-    activeMembers = 98,
-    coaches = 5,
-    classes = 24,
-    rating = 4.8f,
-    description = "El mejor BOX de CrossFit en la ciudad. Entrenadores certificados, equipamiento de primera calidad y una comunidad increíble."
-)
 
 /*ManageCoachesScreen*/
 

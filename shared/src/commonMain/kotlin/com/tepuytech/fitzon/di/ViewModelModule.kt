@@ -34,6 +34,7 @@ val viewModelModule = module {
             boxDashboardUseCase = get(),
             boxInfoUseCase = get(),
             boxProfileUseCase = get(),
+            updateBoxProfileUseCase = get(),
             logoutUseCase = get()
         )
     }

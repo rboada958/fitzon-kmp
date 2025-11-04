@@ -330,7 +330,7 @@ fun BoxInfoAthleteScreen(
                                         color = cardBackground
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
-                                            Text(photo.url, fontSize = 40.sp)
+                                            Text(photo, fontSize = 40.sp)
                                         }
                                     }
                                 }
@@ -419,7 +419,7 @@ fun BoxInfoAthleteScreen(
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     Text(
-                                                        text = amenity.name,
+                                                        text = amenity,
                                                         fontSize = 14.sp,
                                                         color = Color.White
                                                     )

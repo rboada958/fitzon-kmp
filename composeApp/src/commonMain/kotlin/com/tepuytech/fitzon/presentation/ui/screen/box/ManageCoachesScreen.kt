@@ -178,7 +178,7 @@ fun ManageCoachesScreen(
                     ) {
                         FitzonQuickStat("Total", "${coaches.size}", greenLight)
                         FitzonQuickStat("Activos", "${coaches.count { it.status == CoachStatus.ACTIVE }}", greenPrimary)
-                        FitzonQuickStat("Clases/sem", "${coaches.sumOf { it.classesPerWeek }}", Color(0xFFFFB84D))
+                        FitzonQuickStat("Clases/sem", "${coaches.sumOf { it.totalClasses }}", Color(0xFFFFB84D))
                     }
                 }
 
@@ -324,9 +324,9 @@ fun ManageCoachesScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     CoachDetailRow("📱", "Teléfono", selectedCoach!!.phone)
                     Spacer(modifier = Modifier.height(12.dp))
-                    CoachDetailRow("📅", "Miembro desde", selectedCoach!!.joinDate)
+                    CoachDetailRow("📅", "Miembro desde", selectedCoach!!.joinedAt)
                     Spacer(modifier = Modifier.height(12.dp))
-                    CoachDetailRow("⏱️", "Experiencia", selectedCoach!!.experience)
+                    CoachDetailRow("⏱️", "Experiencia", selectedCoach!!.yearsExperience)
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
@@ -543,7 +543,7 @@ fun CoachCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "📅 ${coach.classesPerWeek} clases",
+                        text = "📅 ${coach.totalClasses} clases",
                         fontSize = 12.sp,
                         color = textGray
                     )

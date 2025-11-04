@@ -28,7 +28,11 @@ val repositoryModule = module {
     }
 
     single<WorkoutRepository> {
-        WorkoutRepositoryImpl(apiService = get())
+        WorkoutRepositoryImpl(
+            apiService = get(),
+            api = get(),
+            sessionManager = get()
+        )
     }
 
     single<BoxRepository> {

@@ -1,7 +1,7 @@
 package com.tepuytech.fitzon.domain.usecase
 
 import com.tepuytech.fitzon.domain.model.athletes.AthleteDashboardResult
-import com.tepuytech.fitzon.domain.model.box.BoxApiException
+import com.tepuytech.fitzon.data.remote.ApiException
 import com.tepuytech.fitzon.domain.repository.AthleteRepository
 
 class AthleteDashboardUseCase(
@@ -11,7 +11,7 @@ class AthleteDashboardUseCase(
         return try {
             val response = athleteRepository.athleteDashboard()
             AthleteDashboardResult.Success(response)
-        } catch (e: BoxApiException) {
+        } catch (e: ApiException) {
             AthleteDashboardResult.Error(e.errorMessage)
         }
     }
