@@ -1,9 +1,6 @@
 package com.tepuytech.fitzon.domain.model.box
 
-import com.tepuytech.fitzon.domain.Photo
-import com.tepuytech.fitzon.domain.model.Amenity
 import com.tepuytech.fitzon.domain.model.CoachInfo
-
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -19,6 +16,6 @@ data class BoxInfoResponse(
     val totalReviews: Int = 0,
     val totalMembers: Int = 0,
     val coaches: List<CoachInfo>? = null,
-    val amenities: List<Amenity>? = null,
-    val photos: List<Photo>? = null,
+    val amenities: List<String>? = null,
+    val photos: List<String>? = null
 )

@@ -9,6 +9,7 @@ import com.tepuytech.fitzon.domain.usecase.IsUserLoggedInUseCase
 import com.tepuytech.fitzon.domain.usecase.LoginUseCase
 import com.tepuytech.fitzon.domain.usecase.LogoutUseCase
 import com.tepuytech.fitzon.domain.usecase.UpdateAthleteProfileUseCase
+import com.tepuytech.fitzon.domain.usecase.UpdateBoxProfileUseCase
 import com.tepuytech.fitzon.domain.usecase.UserRoleUseCase
 import com.tepuytech.fitzon.domain.usecase.WorkoutOfTheDayUseCase
 import org.koin.dsl.module
@@ -69,6 +70,12 @@ val useCaseModule = module {
 
     factory {
         BoxProfileUseCase(
+            boxRepository = get()
+        )
+    }
+
+    factory {
+        UpdateBoxProfileUseCase(
             boxRepository = get()
         )
     }

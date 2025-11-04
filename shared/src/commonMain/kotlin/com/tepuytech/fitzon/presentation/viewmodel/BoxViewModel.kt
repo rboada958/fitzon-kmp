@@ -3,10 +3,12 @@ package com.tepuytech.fitzon.presentation.viewmodel
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.tepuytech.fitzon.domain.model.box.BoxDashboardResult
+import com.tepuytech.fitzon.domain.model.box.UpdateBoxProfileRequest
 import com.tepuytech.fitzon.domain.usecase.BoxDashboardUseCase
 import com.tepuytech.fitzon.domain.usecase.BoxInfoUseCase
 import com.tepuytech.fitzon.domain.usecase.BoxProfileUseCase
 import com.tepuytech.fitzon.domain.usecase.LogoutUseCase
+import com.tepuytech.fitzon.domain.usecase.UpdateBoxProfileUseCase
 import com.tepuytech.fitzon.presentation.state.BoxUiState
 import com.tepuytech.fitzon.presentation.state.LogoutUiState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +20,7 @@ class BoxViewModel(
     private val boxDashboardUseCase: BoxDashboardUseCase,
     private val boxInfoUseCase: BoxInfoUseCase,
     private val boxProfileUseCase: BoxProfileUseCase,
+    private val updateBoxProfileUseCase: UpdateBoxProfileUseCase,
     private val logoutUseCase: LogoutUseCase
 ) : ScreenModel {
 
@@ -74,6 +77,26 @@ class BoxViewModel(
                 when (val result = boxProfileUseCase()) {
                     is BoxDashboardResult.SuccessBoxProfile -> {
                         _uiState.value = BoxUiState.SuccessBoxProfile(result.boxProfile)
+                    }
+
+                    is BoxDashboardResult.Error -> {
+                        _uiState.value = BoxUiState.Error(result.message)
+                    }
+                    else -> {}
+                }
+            } catch (e: Exception) {
+                _uiState.value = BoxUiState.Error(e.message ?: "Unknown error")
+            }
+        }
+    }
+
+    fun updateBoxProfile(updateBoxProfileRequest: UpdateBoxProfileRequest) {
+        screenModelScope.launch {
+            _uiState.value = BoxUiState.Loading
+            try {
+                when (val result = updateBoxProfileUseCase(updateBoxProfileRequest)) {
+                    is BoxDashboardResult.SuccessUpdateBoxProfile -> {
+                        _uiState.value  = BoxUiState.SuccessUpdateBoxProfile(result.updateBoxProfile)
                     }
 
                     is BoxDashboardResult.Error -> {
