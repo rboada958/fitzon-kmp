@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jdk-slim AS builder
+FROM eclipse-temurin:17-jdk AS builder
 
 WORKDIR /app
 
@@ -22,7 +22,7 @@ RUN chmod +x ./gradlew
 RUN ./gradlew :server:buildFatJar --no-daemon
 
 # Runtime stage
-FROM eclipse-temurin:17-jdk-slim
+FROM eclipse-temurin:17-jdk
 
 WORKDIR /app
 
