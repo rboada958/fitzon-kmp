@@ -3,6 +3,7 @@ package com.tepuytech.fitzon.data
 import at.favre.lib.crypto.bcrypt.BCrypt
 import com.tepuytech.fitzon.models.Athletes
 import com.tepuytech.fitzon.models.Boxes
+import com.tepuytech.fitzon.models.Coaches
 import com.tepuytech.fitzon.models.UserDTO
 import com.tepuytech.fitzon.models.Users
 import org.jetbrains.exposed.sql.insert
@@ -156,14 +157,41 @@ class AuthRepository {
     }
 
     fun getAll(): List<UserDTO> = transaction {
-        Users.selectAll().map {
-            UserDTO(
-                it[Users.id].toString(),
-                it[Users.email],
-                it[Users.name],
-                it[Users.role]
-            )
-        }
+        (Users leftJoin Athletes leftJoin Boxes)
+            .selectAll()
+            .map { row ->
+                val role = row[Users.role]
+                val userId = row[Users.id]
+
+                // Obtener box info si es ATHLETE
+                val athleteBox = if (role == "ATHLETE") {
+                    Athletes
+                        .innerJoin(Boxes)
+                        .selectAll()
+                        .where { Athletes.userId eq userId }
+                        .singleOrNull()
+                } else null
+
+                // Obtener box info si es COACH
+                val coachBox = if (role == "COACH") {
+                    Coaches
+                        .innerJoin(Boxes)
+                        .selectAll()
+                        .where { Coaches.userId eq userId }
+                        .singleOrNull()
+                } else null
+
+                UserDTO(
+                    id = userId.toString(),
+                    email = row[Users.email],
+                    name = row[Users.name],
+                    role = role,
+                    boxId = athleteBox?.get(Boxes.id)?.toString()
+                        ?: coachBox?.get(Boxes.id)?.toString(),
+                    boxName = athleteBox?.get(Boxes.name)
+                        ?: coachBox?.get(Boxes.name)
+                )
+            }
     }
 
     fun updateProfile(id: String, name: String?, profileImageUrl: String?): UserDTO? = transaction {

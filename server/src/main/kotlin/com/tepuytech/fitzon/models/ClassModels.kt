@@ -11,7 +11,8 @@ data class CreateClassRequest(
     val endTime: String, // "10:00 AM"
     val dayOfWeek: String, // MONDAY, TUESDAY, etc
     val maxCapacity: Int,
-    val level: String = "BEGINNER" // BEGINNER, INTERMEDIATE, ADVANCED
+    val level: String = "BEGINNER", // BEGINNER, INTERMEDIATE, ADVANCED
+    val workoutId: String? = null
 )
 
 @Serializable
@@ -24,5 +25,6 @@ data class ClassScheduleItem(
     val maxCapacity: Int,
     val description: String,
     val level: String,
+    val dayOfWeek: String,
     val isNow: Boolean = false
 )

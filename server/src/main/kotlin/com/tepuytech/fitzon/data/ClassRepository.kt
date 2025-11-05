@@ -16,11 +16,15 @@ class ClassRepository {
         endTime: String,
         dayOfWeek: String,
         maxCapacity: Int,
-        level: String
+        level: String,
+        workoutId: String? = null
     ): ClassScheduleItem? = transaction {
         try {
             val ownerUuid = UUID.fromString(boxOwnerId)
             val coachUuid = UUID.fromString(coachId)
+
+            // Convertir workoutId si existe
+            val workoutUuidOrNull = workoutId?.let { UUID.fromString(it) }
 
             // Verificar que el box pertenece al owner
             val box = Boxes.selectAll()
@@ -56,6 +60,7 @@ class ClassRepository {
                 it[ClassSchedules.maxCapacity] = maxCapacity
                 it[ClassSchedules.level] = level
                 it[ClassSchedules.isActive] = true
+                it[ClassSchedules.workoutId] = workoutUuidOrNull
             }
 
             ClassScheduleItem(
@@ -67,6 +72,7 @@ class ClassRepository {
                 maxCapacity = maxCapacity,
                 description = description ?: "",
                 level = level,
+                dayOfWeek = dayOfWeek,
                 isNow = false
             )
         } catch (e: Exception) {
@@ -108,6 +114,7 @@ class ClassRepository {
                         maxCapacity = schedule[ClassSchedules.maxCapacity],
                         description = schedule[ClassSchedules.description] ?: "",
                         level = schedule[ClassSchedules.level],
+                        dayOfWeek = schedule[ClassSchedules.dayOfWeek],
                         isNow = false
                     )
                 }
