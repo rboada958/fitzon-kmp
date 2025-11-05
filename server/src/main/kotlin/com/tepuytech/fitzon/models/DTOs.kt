@@ -12,6 +12,8 @@ data class UserDTO(
     val name: String? = null,
     val role: String? = null, // ATHLETE, BOX_OWNER, COACH
     val profileImageUrl: String? = null,
+    val boxId: String? = null,
+    val boxName: String? = null,
     val createdAt: String? = null
 )
 

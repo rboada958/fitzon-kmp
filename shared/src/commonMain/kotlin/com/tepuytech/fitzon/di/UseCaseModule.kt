@@ -5,6 +5,7 @@ import com.tepuytech.fitzon.domain.usecase.AthleteProfileUseCase
 import com.tepuytech.fitzon.domain.usecase.BoxDashboardUseCase
 import com.tepuytech.fitzon.domain.usecase.BoxInfoUseCase
 import com.tepuytech.fitzon.domain.usecase.BoxProfileUseCase
+import com.tepuytech.fitzon.domain.usecase.CoachesUseCase
 import com.tepuytech.fitzon.domain.usecase.IsUserLoggedInUseCase
 import com.tepuytech.fitzon.domain.usecase.LoginUseCase
 import com.tepuytech.fitzon.domain.usecase.LogoutUseCase
@@ -77,6 +78,12 @@ val useCaseModule = module {
     factory {
         UpdateBoxProfileUseCase(
             boxRepository = get()
+        )
+    }
+
+    factory {
+        CoachesUseCase(
+            coachRepository = get()
         )
     }
 }

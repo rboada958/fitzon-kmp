@@ -1,5 +1,6 @@
 package com.tepuytech.fitzon.models
 
+import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.javatime.CurrentDateTime
 import org.jetbrains.exposed.sql.javatime.date
@@ -184,6 +185,7 @@ object ClassSchedules : Table("class_schedules") {
     val currentEnrollment = integer("current_enrollment").default(0)
     val level = varchar("level", 50).default("BEGINNER")
     val isActive = bool("is_active").default(true)
+    val workoutId = reference("workout_id", Workouts.id, onDelete = ReferenceOption.SET_NULL).nullable()
     val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)
 
     override val primaryKey = PrimaryKey(id)

@@ -39,6 +39,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,48 +52,72 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.tepuytech.fitzon.data.coaches
-import com.tepuytech.fitzon.domain.enums.CoachStatus
-import com.tepuytech.fitzon.domain.model.Coach
+import com.tepuytech.fitzon.domain.model.coach.CoachResponse
 import com.tepuytech.fitzon.getPlatform
+import com.tepuytech.fitzon.presentation.state.CoachUiState
+import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
 import com.tepuytech.fitzon.presentation.ui.composable.FitzonQuickStat
 import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
 import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
+import com.tepuytech.fitzon.presentation.viewmodel.CoachViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 class ManageCoaches: Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        val viewModel = getScreenModel<CoachViewModel>()
+        val uiState by viewModel.uiState.collectAsState()
 
-        ManageCoachesScreen(
-            onBackClick = {
-                navigator.pop()
+        LaunchedEffect(Unit) {
+            viewModel.getCoaches()
+        }
+
+        when (uiState) {
+            is CoachUiState.Loading -> {
+                AthleteDashboardShimmer()
+                return
             }
-        )
+            is CoachUiState.Success -> {
+                val coachState = (uiState as CoachUiState.Success).coaches
+                ManageCoachesScreen(
+                    coachState = coachState,
+                    onBackClick = {
+                        navigator.pop()
+                    }
+                )
+            }
+            is CoachUiState.Error -> {
+                Text("Error: ${(uiState as CoachUiState.Error).message}")
+            }
+
+            else -> {}
+        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManageCoachesScreen(
+    coachState: List<CoachResponse>  = emptyList(),
     onBackClick: () -> Unit = {}
 ) {
 
     var coaches by remember {
         mutableStateOf(
-            coaches
+            coachState
         )
     }
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Todos") }
-    var selectedCoach by remember { mutableStateOf<Coach?>(null) }
+    var selectedCoach by remember { mutableStateOf<CoachResponse?>(null) }
     var showCoachDetails by remember { mutableStateOf(false) }
 
     val filters = listOf("Todos", "Activos", "Inactivos", "Licencia")
@@ -100,9 +126,9 @@ fun ManageCoachesScreen(
         val matchesSearch = coach.name.contains(searchQuery, ignoreCase = true) ||
                 coach.email.contains(searchQuery, ignoreCase = true)
         val matchesFilter = when (selectedFilter) {
-            "Activos" -> coach.status == CoachStatus.ACTIVE
-            "Inactivos" -> coach.status == CoachStatus.INACTIVE
-            "Licencia" -> coach.status == CoachStatus.ON_LEAVE
+            "Activos" -> coach.status == "ACTIVE"
+            "Inactivos" -> coach.status == "INACTIVE"
+            "Licencia" -> coach.status == "ON_LEAVE"
             else -> true
         }
         matchesSearch && matchesFilter
@@ -177,7 +203,7 @@ fun ManageCoachesScreen(
                         horizontalArrangement = Arrangement.SpaceAround
                     ) {
                         FitzonQuickStat("Total", "${coaches.size}", greenLight)
-                        FitzonQuickStat("Activos", "${coaches.count { it.status == CoachStatus.ACTIVE }}", greenPrimary)
+                        FitzonQuickStat("Activos", "${coaches.count { it.status == "ACTIVE" }}", greenPrimary)
                         FitzonQuickStat("Clases/sem", "${coaches.sumOf { it.totalClasses }}", Color(0xFFFFB84D))
                     }
                 }
@@ -208,7 +234,7 @@ fun ManageCoachesScreen(
                             decorationBox = { innerTextField ->
                                 if (searchQuery.isEmpty()) {
                                     Text(
-                                        "Buscar coachName por nombre...",
+                                        "Buscar por nombre...",
                                         color = textGray,
                                         fontSize = 16.sp
                                     )
@@ -320,13 +346,13 @@ fun ManageCoachesScreen(
                 Column(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    CoachDetailRow("📧", "Email", selectedCoach!!.email)
+                    CoachDetailRow("📧", "Email", selectedCoach?.email ?: "")
                     Spacer(modifier = Modifier.height(12.dp))
-                    CoachDetailRow("📱", "Teléfono", selectedCoach!!.phone)
+                    CoachDetailRow("📱", "Teléfono", selectedCoach?.phone ?: "")
                     Spacer(modifier = Modifier.height(12.dp))
-                    CoachDetailRow("📅", "Miembro desde", selectedCoach!!.joinedAt)
+                    CoachDetailRow("📅", "Miembro desde", selectedCoach?.joinedAt ?: "")
                     Spacer(modifier = Modifier.height(12.dp))
-                    CoachDetailRow("⏱️", "Experiencia", selectedCoach!!.yearsExperience)
+                    CoachDetailRow("⏱️", "Experiencia", selectedCoach?.yearsExperience ?: "")
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
@@ -399,7 +425,7 @@ fun ManageCoachesScreen(
                             Text("📅 Ver Horario", color = Color(0xFF081C15))
                         }
 
-                        if (selectedCoach!!.status == CoachStatus.ACTIVE) {
+                        if (selectedCoach!!.status == "ACTIVE") {
                             OutlinedButton(
                                 onClick = { /* Cambiar a licencia */ },
                                 modifier = Modifier.fillMaxWidth(),
@@ -451,7 +477,7 @@ fun ManageCoachesScreen(
 
 @Composable
 fun CoachCard(
-    coach: Coach,
+    coach: CoachResponse,
     cardBackground: Color,
     greenPrimary: Color,
     greenLight: Color,
@@ -475,10 +501,11 @@ fun CoachCard(
                 Surface(
                     modifier = Modifier.size(50.dp),
                     shape = CircleShape,
-                    color = when (coach.status) {
-                        CoachStatus.ACTIVE -> greenPrimary.copy(alpha = 0.3f)
-                        CoachStatus.INACTIVE -> Color(0xFF5A5A5A)
-                        CoachStatus.ON_LEAVE -> Color(0xFFFFB84D).copy(alpha = 0.3f)
+                    color = when (coach.status) {  // ← Status es String ahora
+                        "ACTIVE" -> greenPrimary.copy(alpha = 0.3f)
+                        "INACTIVE" -> Color(0xFF5A5A5A)
+                        "ON_LEAVE" -> Color(0xFFFFB84D).copy(alpha = 0.3f)
+                        else -> Color(0xFF5A5A5A)
                     }
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -493,9 +520,10 @@ fun CoachCard(
                         .align(Alignment.BottomEnd),
                     shape = CircleShape,
                     color = when (coach.status) {
-                        CoachStatus.ACTIVE -> greenPrimary
-                        CoachStatus.INACTIVE -> Color(0xFF5A5A5A)
-                        CoachStatus.ON_LEAVE -> Color(0xFFFFB84D)
+                        "ACTIVE" -> greenPrimary.copy(alpha = 0.2f)
+                        "INACTIVE" -> Color(0xFF5A5A5A)
+                        "ON_LEAVE" -> Color(0xFFFFB84D).copy(alpha = 0.2f)
+                        else -> Color(0xFF5A5A5A)
                     }
                 ) {}
             }
@@ -551,7 +579,7 @@ fun CoachCard(
                     Text("•", fontSize = 12.sp, color = textGray)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "👥 ${coach.totalStudents}",
+                        text = "👥 ${coach.totalClasses}",
                         fontSize = 12.sp,
                         color = textGray
                     )
@@ -562,23 +590,26 @@ fun CoachCard(
             Surface(
                 shape = RoundedCornerShape(8.dp),
                 color = when (coach.status) {
-                    CoachStatus.ACTIVE -> greenPrimary.copy(alpha = 0.2f)
-                    CoachStatus.INACTIVE -> Color(0xFF5A5A5A)
-                    CoachStatus.ON_LEAVE -> Color(0xFFFFB84D).copy(alpha = 0.2f)
+                    "ACTIVE" -> greenPrimary.copy(alpha = 0.2f)
+                    "INACTIVE" -> Color(0xFF5A5A5A)
+                    "ON_LEAVE" -> Color(0xFFFFB84D).copy(alpha = 0.2f)
+                    else -> Color(0xFF5A5A5A)
                 }
             ) {
                 Text(
                     text = when (coach.status) {
-                        CoachStatus.ACTIVE -> "Activo"
-                        CoachStatus.INACTIVE -> "Inactivo"
-                        CoachStatus.ON_LEAVE -> "Licencia"
+                        "ACTIVE" -> "Activo"
+                        "INACTIVE" -> "Inactivo"
+                        "ON_LEAVE" -> "Licencia"
+                        else -> coach.status
                     },
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = when (coach.status) {
-                        CoachStatus.ACTIVE -> greenLight
-                        CoachStatus.INACTIVE -> Color(0xFFB7B7B7)
-                        CoachStatus.ON_LEAVE -> Color(0xFFFFB84D)
+                        "ACTIVE" -> greenLight
+                        "INACTIVE" -> Color(0xFFB7B7B7)
+                        "ON_LEAVE" -> Color(0xFFFFB84D)
+                        else -> Color.White
                     },
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                 )
