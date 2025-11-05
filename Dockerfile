@@ -22,7 +22,7 @@ RUN chmod +x ./gradlew
 RUN ./gradlew :server:buildFatJar --no-daemon
 
 # Runtime stage
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jdk-slim
 
 WORKDIR /app
 
