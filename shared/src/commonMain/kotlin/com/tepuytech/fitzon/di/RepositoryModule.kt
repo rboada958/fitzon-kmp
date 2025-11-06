@@ -5,12 +5,14 @@ import com.tepuytech.fitzon.data.repository.AuthRepositoryImpl
 import com.tepuytech.fitzon.data.repository.BoxRepositoryImpl
 import com.tepuytech.fitzon.data.repository.ClassRepositoryImpl
 import com.tepuytech.fitzon.data.repository.CoachRepositoryImpl
+import com.tepuytech.fitzon.data.repository.MemberRepositoryImpl
 import com.tepuytech.fitzon.data.repository.WorkoutRepositoryImpl
 import com.tepuytech.fitzon.domain.repository.AthleteRepository
 import com.tepuytech.fitzon.domain.repository.AuthRepository
 import com.tepuytech.fitzon.domain.repository.BoxRepository
 import com.tepuytech.fitzon.domain.repository.ClassRepository
 import com.tepuytech.fitzon.domain.repository.CoachRepository
+import com.tepuytech.fitzon.domain.repository.MemberRepository
 import com.tepuytech.fitzon.domain.repository.WorkoutRepository
 import org.koin.dsl.module
 
@@ -57,6 +59,14 @@ val repositoryModule = module {
 
     single<ClassRepository> {
         ClassRepositoryImpl(
+            api = get(),
+            apiService = get(),
+            sessionManager = get()
+        )
+    }
+
+    single<MemberRepository> {
+        MemberRepositoryImpl(
             api = get(),
             apiService = get(),
             sessionManager = get()

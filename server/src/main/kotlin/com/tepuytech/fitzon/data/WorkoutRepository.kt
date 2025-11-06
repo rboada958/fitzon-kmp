@@ -15,6 +15,7 @@ class WorkoutRepository {
         title: String,
         description: String?,
         date: String,
+        dayOfWeek: String,
         duration: Int,
         difficulty: String,
         classId: String?,
@@ -52,6 +53,7 @@ class WorkoutRepository {
                 it[Workouts.title] = title
                 it[Workouts.description] = description
                 it[Workouts.date] = LocalDate.parse(date)
+                it[Workouts.dayOfWeek] = dayOfWeek
                 it[Workouts.duration] = duration
                 it[Workouts.difficulty] = difficulty
             }
@@ -92,11 +94,12 @@ class WorkoutRepository {
                 className = className,
                 title = title,
                 description = description,
-                exercises = exerciseResponses,
                 date = date,
+                dayOfWeek = dayOfWeek,
                 duration = duration,
                 difficulty = difficulty,
-                createdAt = workout[Workouts.createdAt].toString()
+                createdAt = workout[Workouts.createdAt].toString(),
+                exercises = exerciseResponses
             )
         } catch (e: Exception) {
             println("Error in createWorkout: ${e.message}")
@@ -150,6 +153,7 @@ class WorkoutRepository {
                 description = workout[Workouts.description],
                 exercises = exercises,
                 date = workout[Workouts.date].toString(),
+                dayOfWeek = workout[Workouts.dayOfWeek],
                 duration = workout[Workouts.duration],
                 difficulty = workout[Workouts.difficulty],
                 createdAt = workout[Workouts.createdAt].toString()
@@ -205,11 +209,12 @@ class WorkoutRepository {
                         className = className,
                         title = workout[Workouts.title],
                         description = workout[Workouts.description],
-                        exercises = exercises,
                         date = workout[Workouts.date].toString(),
+                        dayOfWeek = workout[Workouts.dayOfWeek],
                         duration = workout[Workouts.duration],
                         difficulty = workout[Workouts.difficulty],
-                        createdAt = workout[Workouts.createdAt].toString()
+                        createdAt = workout[Workouts.createdAt].toString(),
+                        exercises = exercises,
                     )
                 }
         } catch (e: Exception) {
@@ -300,6 +305,7 @@ class WorkoutRepository {
                 description = workout[Workouts.description],
                 exercises = exercises,
                 date = workout[Workouts.date].toString(),
+                dayOfWeek = workout[Workouts.dayOfWeek],
                 duration = workout[Workouts.duration],
                 difficulty = workout[Workouts.difficulty],
                 createdAt = workout[Workouts.createdAt].toString()

@@ -2,8 +2,10 @@ package com.tepuytech.fitzon.di
 
 import com.tepuytech.fitzon.presentation.viewmodel.AthleteViewModel
 import com.tepuytech.fitzon.presentation.viewmodel.BoxViewModel
+import com.tepuytech.fitzon.presentation.viewmodel.ClassViewModel
 import com.tepuytech.fitzon.presentation.viewmodel.CoachViewModel
 import com.tepuytech.fitzon.presentation.viewmodel.LoginViewModel
+import com.tepuytech.fitzon.presentation.viewmodel.MemberViewModel
 import com.tepuytech.fitzon.presentation.viewmodel.WorkoutViewModel
 import org.koin.dsl.module
 
@@ -43,6 +45,19 @@ val viewModelModule = module {
     factory<CoachViewModel> {
         CoachViewModel(
             coachesUseCase = get()
+        )
+    }
+
+    factory<ClassViewModel> {
+        ClassViewModel(
+            createClassUseCase = get(),
+            classesUseCase = get()
+        )
+    }
+
+    factory<MemberViewModel> {
+        MemberViewModel(
+            membersUseCase = get()
         )
     }
 }

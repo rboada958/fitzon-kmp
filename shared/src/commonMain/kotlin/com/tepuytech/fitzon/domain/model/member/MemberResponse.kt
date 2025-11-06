@@ -1,4 +1,4 @@
-package com.tepuytech.fitzon.domain.model
+package com.tepuytech.fitzon.domain.model.member
 
 import kotlinx.serialization.Serializable
 

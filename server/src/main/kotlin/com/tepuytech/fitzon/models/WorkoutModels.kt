@@ -7,6 +7,7 @@ data class CreateWorkoutRequest(
     val title: String,
     val description: String? = null,
     val date: String, // "YYYY-MM-DD"
+    val dayOfWeek: String, // "Monday", "Tuesday", etc.
     val duration: Int, // minutos
     val difficulty: String, // BEGINNER, INTERMEDIATE, ADVANCED, RX
     val classId: String? = null,
@@ -32,11 +33,12 @@ data class WorkoutResponse(
     val className: String? = null,
     val title: String,
     val description: String? = null,
-    val exercises: List<ExerciseResponse>,
     val date: String,
+    val dayOfWeek: String,
     val duration: Int,
     val difficulty: String,
-    val createdAt: String
+    val createdAt: String,
+    val exercises: List<ExerciseResponse>
 )
 
 @Serializable

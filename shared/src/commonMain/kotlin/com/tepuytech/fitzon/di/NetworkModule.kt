@@ -6,6 +6,7 @@ import com.tepuytech.fitzon.data.remote.api.AuthApi
 import com.tepuytech.fitzon.data.remote.api.BoxApi
 import com.tepuytech.fitzon.data.remote.api.ClassApi
 import com.tepuytech.fitzon.data.remote.api.CoachApi
+import com.tepuytech.fitzon.data.remote.api.MemberApi
 import com.tepuytech.fitzon.data.remote.api.TokenApi
 import com.tepuytech.fitzon.data.remote.api.WorkoutApi
 import io.ktor.client.HttpClient
@@ -60,6 +61,13 @@ val networkModule = module {
 
     single<ClassApi> {
         ClassApi(
+            httpClient = get<HttpClient>(),
+            sessionManager = get()
+        )
+    }
+
+    single<MemberApi> {
+        MemberApi(
             httpClient = get<HttpClient>(),
             sessionManager = get()
         )

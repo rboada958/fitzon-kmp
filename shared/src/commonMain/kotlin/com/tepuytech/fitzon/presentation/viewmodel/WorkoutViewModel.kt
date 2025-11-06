@@ -31,6 +31,7 @@ class WorkoutViewModel (
                     is WorkoutResult.Empty -> {
                         _uiState.value = WorkoutUiState.Empty(result.message)
                     }
+                    else -> {}
                 }
             } catch (e: Exception) {
                 _uiState.value = WorkoutUiState.Error(e.message ?: "Unknown error")

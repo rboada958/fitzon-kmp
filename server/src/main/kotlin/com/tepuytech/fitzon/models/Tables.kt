@@ -104,6 +104,7 @@ object Workouts : Table("workouts") {
     val title = varchar("title", 255)
     val description = varchar("description", 1000).nullable()
     val date = date("date")
+    val dayOfWeek = varchar("day_of_week", 20)
     val duration = integer("duration")
     val difficulty = varchar("difficulty", 50)
     val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)
