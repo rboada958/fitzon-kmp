@@ -12,4 +12,5 @@ data class CreateClassResponse(
     val maxCapacity: Long,
     val description: String,
     val level: String,
+    val dayOfWeek: String
 )

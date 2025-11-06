@@ -39,6 +39,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,65 +50,94 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.tepuytech.fitzon.data.classes
 import com.tepuytech.fitzon.domain.enums.ClassStatus
 import com.tepuytech.fitzon.domain.enums.DayOfWeek
-import com.tepuytech.fitzon.domain.model.ClassSession
+import com.tepuytech.fitzon.domain.model.classes.ClassesResponse
 import com.tepuytech.fitzon.getPlatform
+import com.tepuytech.fitzon.presentation.state.ClassUiState
+import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
 import com.tepuytech.fitzon.presentation.ui.composable.FitzonQuickStat
 import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
 import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
+import com.tepuytech.fitzon.presentation.viewmodel.ClassViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-class ManageClasses : Screen {
+class ManageClasses(val boxId: String) : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        val viewModel = getScreenModel<ClassViewModel>()
+        val uiState by viewModel.uiState.collectAsState()
 
-        ManageClassesScreen(
-            onBackClick = { navigator.pop() },
-            onCreateClassClick = { navigator.push(CreateClass()) }
-        )
+        LaunchedEffect(Unit) {
+            viewModel.getClasses(boxId)
+        }
+
+        when (uiState) {
+            is ClassUiState.Loading -> {
+                AthleteDashboardShimmer()
+                return
+            }
+            is ClassUiState.Success -> {
+                val classState = (uiState as ClassUiState.Success).classes
+                ManageClassesScreen(
+                    classesState = classState,
+                    onBackClick = { navigator.pop() },
+                    onCreateClassClick = { navigator.push(CreateClass()) }
+                )
+            }
+            is ClassUiState.Error -> {
+                Text("Error: ${(uiState as ClassUiState.Error).message}")
+            }
+
+            else -> {}
+        }
     }
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManageClassesScreen(
+    classesState: List<ClassesResponse> = emptyList(),
     onBackClick: () -> Unit = {},
     onCreateClassClick: () -> Unit = {},
 ) {
     var classes by remember {
         mutableStateOf(
-            classes
+            classesState
         )
     }
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedDay by remember { mutableStateOf<DayOfWeek?>(null) }
-    var selectedClass by remember { mutableStateOf<ClassSession?>(null) }
+    var selectedClass by remember { mutableStateOf<ClassesResponse?>(null) }
     var showClassDetails by remember { mutableStateOf(false) }
 
-    val days = listOf(DayOfWeek.LUNES, DayOfWeek.MARTES, DayOfWeek.MIERCOLES, DayOfWeek.JUEVES, DayOfWeek.VIERNES, DayOfWeek.SABADO, DayOfWeek.DOMINGO)
+    val days = listOf(
+        DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
+        DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY
+    )
 
 
     val filteredClasses = classes.filter { classSession ->
         val matchesSearch = classSession.name.contains(searchQuery, ignoreCase = true) ||
-                classSession.coach.contains(searchQuery, ignoreCase = true)
+                classSession.coachName.contains(searchQuery, ignoreCase = true)
         val matchesDay = selectedDay == null ||
-                classSession.day.replace("á", "a")
+                classSession.dayOfWeek.replace("á", "a")
                     .replace("é", "e")
                     .replace("í", "i")
                     .replace("ó", "o")
                     .replace("ú", "u")
-                    .equals(selectedDay?.name, ignoreCase = true)
+            .equals(selectedDay?.name, ignoreCase = true)
         matchesSearch && matchesDay
     }
 
@@ -167,7 +198,7 @@ fun ManageClassesScreen(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Estadísticas rápidas
+                // Estadísticas rapids
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = Color(0xFF1B4332).copy(alpha = 0.5f)
@@ -179,7 +210,7 @@ fun ManageClassesScreen(
                         horizontalArrangement = Arrangement.SpaceAround
                     ) {
                         FitzonQuickStat("Clases", "${classes.size}", greenLight)
-                        FitzonQuickStat("Inscritos", "${classes.sumOf { it.enrolled }}", greenPrimary)
+                        FitzonQuickStat("Inscritos", "${classes.sumOf { it.currentEnrollment }}", greenPrimary)
                         FitzonQuickStat("Llenas", "${classes.count { it.status == ClassStatus.FULL }}", Color(0xFFFF6B6B))
                     }
                 }
@@ -210,7 +241,7 @@ fun ManageClassesScreen(
                             decorationBox = { innerTextField ->
                                 if (searchQuery.isEmpty()) {
                                     Text(
-                                        "Buscar clase o coachName...",
+                                        "Buscar clase o coach...",
                                         color = textGray,
                                         fontSize = 16.sp
                                     )
@@ -254,7 +285,19 @@ fun ManageClassesScreen(
                         FilterChip(
                             selected = selectedDay == day,
                             onClick = { selectedDay = day },
-                            label = { Text(day.name.take(3), fontSize = 13.sp) },
+                            label = {
+                                Text(
+                                    mapOf(
+                                        "MONDAY" to "LUN",
+                                        "TUESDAY" to "MAR",
+                                        "WEDNESDAY" to "MIÉ",
+                                        "THURSDAY" to "JUE",
+                                        "FRIDAY" to "VIE",
+                                        "SATURDAY" to "SÁB",
+                                        "SUNDAY" to "DOM"
+                                    )[day.name] ?: day.name.take(3)
+                                , fontSize = 13.sp)
+                            },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = greenPrimary,
                                 selectedLabelColor = Color(0xFF081C15),
@@ -273,7 +316,7 @@ fun ManageClassesScreen(
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    val groupedByDay = filteredClasses.groupBy { it.day }
+                    val groupedByDay = filteredClasses.groupBy { it.dayOfWeek }
 
                     groupedByDay.forEach { (day, classesByDay) ->
                         item {
@@ -348,11 +391,11 @@ fun ManageClassesScreen(
                 Column(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    ClassDetailRow("📅", "Día", selectedClass!!.day)
+                    ClassDetailRow("📅", "Día", selectedClass!!.dayOfWeek)
                     Spacer(modifier = Modifier.height(12.dp))
                     ClassDetailRow("🕐", "Hora", selectedClass!!.time)
                     Spacer(modifier = Modifier.height(12.dp))
-                    ClassDetailRow("👨‍🏫", "Coach", selectedClass!!.coach)
+                    ClassDetailRow("👨‍🏫", "Coach", selectedClass!!.coachName)
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
@@ -367,7 +410,7 @@ fun ManageClassesScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         LinearProgressIndicator(
-                            progress = { selectedClass!!.enrolled.toFloat() / selectedClass!!.capacity },
+                            progress = { selectedClass!!.currentEnrollment.toFloat() / selectedClass!!.maxCapacity },
                             modifier = Modifier
                                 .weight(1f)
                                 .height(8.dp),
@@ -377,7 +420,7 @@ fun ManageClassesScreen(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "${selectedClass!!.enrolled}/${selectedClass!!.capacity}",
+                            text = "${selectedClass!!.currentEnrollment}/${selectedClass!!.maxCapacity}",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -397,7 +440,7 @@ fun ManageClassesScreen(
                             ),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("👥 Ver Inscritos (${selectedClass!!.enrolled})", color = Color(0xFF081C15))
+                            Text("👥 Ver Inscritos (${selectedClass!!.currentEnrollment})", color = Color(0xFF081C15))
                         }
 
                         OutlinedButton(
@@ -424,7 +467,7 @@ fun ManageClassesScreen(
                             }
                         } else if (selectedClass!!.status == ClassStatus.CANCELLED) {
                             OutlinedButton(
-                                onClick = { /* Reactivar */ },
+                                onClick = { /* Reactivate */ },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.outlinedButtonColors(
                                     contentColor = greenLight
@@ -463,7 +506,7 @@ fun ManageClassesScreen(
 
 @Composable
 fun ClassCard(
-    classSession: ClassSession,
+    classSession: ClassesResponse,
     cardBackground: Color,
     greenPrimary: Color,
     greenLight: Color,
@@ -506,7 +549,10 @@ fun ClassCard(
                         text = classSession.name,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth(0.5f)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
 
@@ -563,7 +609,7 @@ fun ClassCard(
                     Text("•", fontSize = 13.sp, color = textGray)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = classSession.coach,
+                        text = classSession.coachName,
                         fontSize = 13.sp,
                         color = textGray
                     )
@@ -577,7 +623,7 @@ fun ClassCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     LinearProgressIndicator(
-                        progress = { classSession.enrolled.toFloat() / classSession.capacity },
+                        progress = { classSession.currentEnrollment.toFloat() / classSession.maxCapacity },
                         modifier = Modifier
                             .weight(1f)
                             .height(6.dp),
@@ -587,7 +633,7 @@ fun ClassCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "${classSession.enrolled}/${classSession.capacity}",
+                        text = "${classSession.currentEnrollment}/${classSession.maxCapacity}",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (classSession.status == ClassStatus.FULL) Color(0xFFFF6B6B) else greenLight

@@ -3,11 +3,13 @@
     <words>
       <w>aceptas</w>
       <w>acerca</w>
+      <w>activa</w>
       <w>activo</w>
       <w>activos</w>
       <w>actualizado</w>
       <w>actualizar</w>
       <w>adicional</w>
+      <w>agrupadas</w>
       <w>ahora</w>
       <w>almacenadas</w>
       <w>altura</w>
@@ -21,8 +23,11 @@
       <w>buscar</w>
       <w>calorías</w>
       <w>cambiar</w>
+      <w>cancelada</w>
       <w>cancelar</w>
+      <w>capacidad</w>
       <w>centenario</w>
+      <w>cerrar</w>
       <w>clase</w>
       <w>clases</w>
       <w>completado</w>
@@ -46,8 +51,10 @@
       <w>descripción</w>
       <w>desde</w>
       <w>destacados</w>
+      <w>detalles</w>
       <w>dirección</w>
       <w>disponible</w>
+      <w>diálogo</w>
       <w>duración</w>
       <w>edad</w>
       <w>editar</w>
@@ -69,27 +76,40 @@
       <w>fuego</w>
       <w>fundación</w>
       <w>físicos</w>
+      <w>gestionar</w>
       <w>guardados</w>
       <w>guardar</w>
+      <w>historial</w>
       <w>horario</w>
+      <w>horarios</w>
+      <w>inactiva</w>
+      <w>inactivo</w>
+      <w>inactivos</w>
       <w>información</w>
       <w>ingreso</w>
       <w>iniciar</w>
+      <w>inscritos</w>
       <w>instalaciones</w>
       <w>inválido</w>
+      <w>lista</w>
       <w>listar</w>
+      <w>llena</w>
+      <w>llenas</w>
       <w>logros</w>
       <w>límites</w>
       <w>mejor</w>
+      <w>membresía</w>
       <w>miembro</w>
       <w>miembros</w>
       <w>minutos</w>
       <w>nombre</w>
+      <w>nueva</w>
       <w>obtener</w>
       <w>obtiene</w>
       <w>olvidaste</w>
       <w>otros</w>
       <w>pendiente</w>
+      <w>pendientes</w>
       <w>perfil</w>
       <w>personales</w>
       <w>pertenece</w>
@@ -101,7 +121,10 @@
       <w>pueden</w>
       <w>racha</w>
       <w>rastrea</w>
+      <w>reactivar</w>
+      <w>recordar</w>
       <w>registra</w>
+      <w>registro</w>
       <w>regístrate</w>
       <w>reintentar</w>
       <w>retornar</w>

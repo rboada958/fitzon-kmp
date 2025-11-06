@@ -104,7 +104,7 @@ class BoxProfile : Screen {
                         navigator.push(ManageCoaches())
                     },
                     onManageClassesClick = {
-                        navigator.push(ManageClasses())
+                        navigator.push(ManageClasses(boxProfileState.id))
                     },
                     onLogoutClick = {
                         viewModel.logout()

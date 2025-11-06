@@ -37,6 +37,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,46 +50,72 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.tepuytech.fitzon.data.members
-import com.tepuytech.fitzon.domain.enums.MemberStatus
-import com.tepuytech.fitzon.domain.enums.PaymentStatus
-import com.tepuytech.fitzon.domain.model.Member
+import com.tepuytech.fitzon.domain.model.member.MemberResponse
 import com.tepuytech.fitzon.getPlatform
+import com.tepuytech.fitzon.presentation.state.MemberUiState
+import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
 import com.tepuytech.fitzon.presentation.ui.composable.FitzonQuickStat
 import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
 import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
+import com.tepuytech.fitzon.presentation.viewmodel.MemberViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 class ManageMembers() : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        val viewModel = getScreenModel<MemberViewModel>()
+        val uiState by viewModel.uiState.collectAsState()
 
-        ManageMembersScreen(
-            onBackClick = { navigator.pop() }
-        )
+        LaunchedEffect(Unit) {
+            viewModel.getMembers()
+        }
+
+        when(uiState) {
+            is MemberUiState.Loading -> {
+                AthleteDashboardShimmer()
+                return
+            }
+            is MemberUiState.Success -> {
+                val membersState = (uiState as MemberUiState.Success).members
+                ManageMembersScreen(
+                    membersState = membersState,
+                    onBackClick = { navigator.pop() }
+                )
+            }
+            is MemberUiState.Error -> {
+                Text("Error: ${(uiState as MemberUiState.Error).message}")
+            }
+
+            else -> {}
+        }
+
+
+
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManageMembersScreen(
+    membersState: List<MemberResponse> = emptyList(),
     onBackClick: () -> Unit = {}
 ) {
     var members by remember {
         mutableStateOf(
-          members
+            membersState
         )
     }
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Todos") }
-    var selectedMember by remember { mutableStateOf<Member?>(null) }
+    var selectedMember by remember { mutableStateOf<MemberResponse?>(null) }
     var showMemberDetails by remember { mutableStateOf(false) }
 
     val filters = listOf("Todos", "Activos", "Inactivos", "Pendientes")
@@ -96,9 +124,9 @@ fun ManageMembersScreen(
         val matchesSearch = member.name.contains(searchQuery, ignoreCase = true) ||
                 member.email.contains(searchQuery, ignoreCase = true)
         val matchesFilter = when (selectedFilter) {
-            "Activos" -> member.status == MemberStatus.ACTIVE
-            "Inactivos" -> member.status == MemberStatus.INACTIVE
-            "Pendientes" -> member.status == MemberStatus.PENDING
+            "Activos" -> member.status == "ACTIVE"
+            "Inactivos" -> member.status == "INACTIVE"
+            "Pendientes" -> member.status == "PENDING"
             else -> true
         }
         matchesSearch && matchesFilter
@@ -150,7 +178,7 @@ fun ManageMembersScreen(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Estadísticas rápidas
+                // Estadísticas
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = Color(0xFF1B4332).copy(alpha = 0.5f)
@@ -162,8 +190,8 @@ fun ManageMembersScreen(
                         horizontalArrangement = Arrangement.SpaceAround
                     ) {
                         FitzonQuickStat("Total", "${members.size}", greenLight)
-                        FitzonQuickStat("Activos", "${members.count { it.status == MemberStatus.ACTIVE }}", greenPrimary)
-                        FitzonQuickStat("Pendientes", "${members.count { it.paymentStatus == PaymentStatus.OVERDUE }}", Color(0xFFFF6B6B))
+                        FitzonQuickStat("Activos", "${members.count { it.status == "ACTIVE" }}", greenPrimary)
+                        FitzonQuickStat("Pendientes", "${members.count { it.paymentStatus == "PENDING" }}", Color(0xFFFF6B6B))
                     }
                 }
 
@@ -212,7 +240,7 @@ fun ManageMembersScreen(
                     }
                 }
 
-                // Filtros
+                // Filters
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -296,11 +324,11 @@ fun ManageMembersScreen(
                 ) {
                     MemberDetailRow("📧", "Email", selectedMember!!.email)
                     Spacer(modifier = Modifier.height(12.dp))
-                    MemberDetailRow("📱", "Teléfono", selectedMember!!.phone)
+                    MemberDetailRow("📱", "Teléfono", selectedMember!!.phone ?: "N/A")
                     Spacer(modifier = Modifier.height(12.dp))
                     MemberDetailRow("💳", "Membresía", selectedMember!!.membershipType)
                     Spacer(modifier = Modifier.height(12.dp))
-                    MemberDetailRow("📅", "Miembro desde", selectedMember!!.joinDate)
+                    MemberDetailRow("📅", "Miembro desde", selectedMember!!.joinedAt)
                     Spacer(modifier = Modifier.height(12.dp))
                     MemberDetailRow("🏋️", "Workouts", "${selectedMember!!.totalWorkouts}")
 
@@ -321,7 +349,7 @@ fun ManageMembersScreen(
                             Text("📊 Ver Historial")
                         }
 
-                        if (selectedMember!!.paymentStatus != PaymentStatus.PAID) {
+                        if (selectedMember!!.paymentStatus != "PAID") {
                             OutlinedButton(
                                 onClick = { },
                                 modifier = Modifier.fillMaxWidth(),
@@ -362,7 +390,7 @@ fun ManageMembersScreen(
 
 @Composable
 fun MemberCard(
-    member: Member,
+    member: MemberResponse,
     cardBackground: Color,
     greenPrimary: Color,
     greenLight: Color,
@@ -386,9 +414,10 @@ fun MemberCard(
                 modifier = Modifier.size(50.dp),
                 shape = CircleShape,
                 color = when (member.status) {
-                    MemberStatus.ACTIVE -> greenPrimary.copy(alpha = 0.3f)
-                    MemberStatus.INACTIVE -> Color(0xFF5A5A5A)
-                    MemberStatus.PENDING -> Color(0xFFFFB84D).copy(alpha = 0.3f)
+                    "ACTIVE" -> greenPrimary.copy(alpha = 0.3f)
+                    "INACTIVE" -> Color(0xFF5A5A5A)
+                    "PENDING" -> Color(0xFFFFB84D).copy(alpha = 0.3f)
+                    else -> Color(0xFF5A5A5A)
                 }
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -417,23 +446,26 @@ fun MemberCard(
                     Surface(
                         shape = RoundedCornerShape(6.dp),
                         color = when (member.status) {
-                            MemberStatus.ACTIVE -> greenPrimary.copy(alpha = 0.2f)
-                            MemberStatus.INACTIVE -> Color(0xFF5A5A5A)
-                            MemberStatus.PENDING -> Color(0xFFFFB84D).copy(alpha = 0.2f)
+                            "ACTIVE" -> greenPrimary.copy(alpha = 0.2f)
+                            "INACTIVE" -> Color(0xFF5A5A5A)
+                            "PENDING" -> Color(0xFFFFB84D).copy(alpha = 0.2f)
+                            else -> Color(0xFF5A5A5A)
                         }
                     ) {
                         Text(
                             text = when (member.status) {
-                                MemberStatus.ACTIVE -> "Activo"
-                                MemberStatus.INACTIVE -> "Inactivo"
-                                MemberStatus.PENDING -> "Pendiente"
+                                "ACTIVE" -> "Activo"
+                                "INACTIVE" -> "Inactivo"
+                                "PENDING" -> "Pendiente"
+                                else -> ""
                             },
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = when (member.status) {
-                                MemberStatus.ACTIVE -> greenLight
-                                MemberStatus.INACTIVE -> Color(0xFFB7B7B7)
-                                MemberStatus.PENDING -> Color(0xFFFFB84D)
+                                "ACTIVE" -> greenLight
+                                "INACTIVE" -> Color(0xFFB7B7B7)
+                                "PENDING" -> Color(0xFFFFB84D)
+                                else -> Color.Unspecified
                             },
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                         )
@@ -474,17 +506,19 @@ fun MemberCard(
                 modifier = Modifier.size(32.dp),
                 shape = CircleShape,
                 color = when (member.paymentStatus) {
-                    PaymentStatus.PAID -> greenPrimary.copy(alpha = 0.2f)
-                    PaymentStatus.PENDING -> Color(0xFFFFB84D).copy(alpha = 0.2f)
-                    PaymentStatus.OVERDUE -> Color(0xFFFF6B6B).copy(alpha = 0.2f)
+                    "PAID" -> greenPrimary.copy(alpha = 0.2f)
+                    "PENDING" -> Color(0xFFFFB84D).copy(alpha = 0.2f)
+                    "OVERDUE" -> Color(0xFFFF6B6B).copy(alpha = 0.2f)
+                    else -> Color(0xFF5A5A5A)
                 }
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
                         text = when (member.paymentStatus) {
-                            PaymentStatus.PAID -> "✓"
-                            PaymentStatus.PENDING -> "⏰"
-                            PaymentStatus.OVERDUE -> "⚠️"
+                            "PAID" -> "✓"
+                            "PENDING" -> "⏰"
+                            "OVERDUE" -> "⚠️"
+                            else -> ""
                         },
                         fontSize = 16.sp
                     )

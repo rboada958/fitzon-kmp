@@ -36,6 +36,7 @@ fun Route.workoutRoutes(repo: WorkoutRepository) {
                     request.title,
                     request.description,
                     request.date,
+                    request.dayOfWeek,
                     request.duration,
                     request.difficulty,
                     request.classId,
