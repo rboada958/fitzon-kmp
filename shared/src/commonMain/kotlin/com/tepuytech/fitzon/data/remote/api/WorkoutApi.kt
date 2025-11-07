@@ -6,6 +6,7 @@ import com.tepuytech.fitzon.domain.model.workout.WorkoutResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.http.HttpStatusCode
@@ -36,5 +37,17 @@ class WorkoutApi(
         }
 
         return response.body()
+    }
+
+    suspend fun deleteWorkout(workoutId: String) {
+        val response = httpClient.delete("/api/workouts/$workoutId") {
+            header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
+        }
+
+        when (response.status) {
+            HttpStatusCode.NoContent -> return
+            HttpStatusCode.Unauthorized -> throw ClientRequestException(response, "Unauthorized")
+            else -> throw ClientRequestException(response, "Error deleting workout: ${response.status}")
+        }
     }
 }

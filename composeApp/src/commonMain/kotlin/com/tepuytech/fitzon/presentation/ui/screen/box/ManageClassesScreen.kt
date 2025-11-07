@@ -93,7 +93,7 @@ class ManageClasses(val boxId: String) : Screen {
                 ManageClassesScreen(
                     classesState = classState,
                     onBackClick = { navigator.pop() },
-                    onCreateClassClick = { navigator.push(CreateClass()) }
+                    onCreateClassClick = { navigator.push(CreateClass(boxId)) }
                 )
             }
             is ClassUiState.Error -> {

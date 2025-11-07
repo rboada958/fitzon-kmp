@@ -28,7 +28,9 @@ val viewModelModule = module {
     }
     factory<WorkoutViewModel> {
         WorkoutViewModel(
-            workoutOfTheDayUseCase = get()
+            workoutOfTheDayUseCase = get(),
+            boxWorkoutUseCase = get(),
+            deleteWorkoutUseCase = get()
         )
     }
 

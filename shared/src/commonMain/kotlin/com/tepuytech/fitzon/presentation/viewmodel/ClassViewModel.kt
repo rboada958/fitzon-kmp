@@ -49,7 +49,13 @@ class ClassViewModel (
             try {
                 when (val result = classesUseCase(boxId)) {
                     is ClassResult.Success -> {
-                        _uiState.value = ClassUiState.Success(result.classes)
+                        val sortedClasses = result.classes.sortedWith(
+                            compareBy(
+                                { dayOrder[it.dayOfWeek] ?: 8 },
+                                { parseTime(it.time) }
+                            )
+                        )
+                        _uiState.value = ClassUiState.Success(sortedClasses)
                     }
 
                     is ClassResult.Error -> {
@@ -63,6 +69,39 @@ class ClassViewModel (
                 }
             } catch (e: Exception) {
                 _uiState.value = ClassUiState.Error(e.message ?: "Unknown error")
+            }
+        }
+    }
+
+    companion object {
+        private val dayOrder = mapOf(
+            "MONDAY" to 1,
+            "TUESDAY" to 2,
+            "WEDNESDAY" to 3,
+            "THURSDAY" to 4,
+            "FRIDAY" to 5,
+            "SATURDAY" to 6,
+            "SUNDAY" to 7
+        )
+
+        private fun parseTime(time: String): Int {
+            return try {
+                val parts = time.split(":")
+                var hour = parts[0].trim().toInt()
+                val isPM = time.contains("PM", ignoreCase = true)
+
+                if (isPM && hour != 12) {
+                    hour += 12
+                } else if (!isPM && hour == 12) {
+                    hour = 0
+                }
+
+                val minute = parts[1].replace(Regex("[^0-9]"), "").toInt()
+                
+                hour * 60 + minute
+            } catch (e: Exception) {
+                println("Error parsing time: $time - ${e.message}")
+                0
             }
         }
     }

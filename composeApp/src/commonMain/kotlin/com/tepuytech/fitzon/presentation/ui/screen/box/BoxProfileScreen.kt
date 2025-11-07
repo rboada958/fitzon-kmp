@@ -95,7 +95,7 @@ class BoxProfile : Screen {
                         navigator.push(EditBoxProfile(boxProfileState))
                     },
                     onManageWorkoutsClick = {
-                        navigator.push(ManageWorkouts())
+                        navigator.push(ManageWorkouts(boxProfileState.id))
                     },
                     onManageMembersClick = {
                         navigator.push(ManageMembers())
