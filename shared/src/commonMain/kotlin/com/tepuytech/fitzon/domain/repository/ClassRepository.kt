@@ -7,4 +7,5 @@ import com.tepuytech.fitzon.domain.model.classes.CreateClassResponse
 interface ClassRepository {
     suspend fun createClass(request: CreateClassRequest): CreateClassResponse
     suspend fun getBoxClasses(boxId: String): List<ClassesResponse>
+    suspend fun deleteClass(classId: String)
 }

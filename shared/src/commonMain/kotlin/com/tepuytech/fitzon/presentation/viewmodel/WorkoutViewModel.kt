@@ -2,8 +2,12 @@ package com.tepuytech.fitzon.presentation.viewmodel
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.tepuytech.fitzon.domain.model.workout.CompleteWorkoutRequest
+import com.tepuytech.fitzon.domain.model.workout.CreateWorkoutRequest
 import com.tepuytech.fitzon.domain.model.workout.WorkoutResult
 import com.tepuytech.fitzon.domain.usecase.BoxWorkoutUseCase
+import com.tepuytech.fitzon.domain.usecase.CompleteWorkoutUseCase
+import com.tepuytech.fitzon.domain.usecase.CreateWorkoutUseCase
 import com.tepuytech.fitzon.domain.usecase.DeleteWorkoutUseCase
 import com.tepuytech.fitzon.domain.usecase.WorkoutOfTheDayUseCase
 import com.tepuytech.fitzon.presentation.state.WorkoutUiState
@@ -14,7 +18,9 @@ import kotlinx.coroutines.launch
 class WorkoutViewModel (
     private val workoutOfTheDayUseCase: WorkoutOfTheDayUseCase,
     private val boxWorkoutUseCase: BoxWorkoutUseCase,
-    private val deleteWorkoutUseCase: DeleteWorkoutUseCase
+    private val deleteWorkoutUseCase: DeleteWorkoutUseCase,
+    private val createWorkoutUseCase: CreateWorkoutUseCase,
+    private val completeWorkoutUseCase: CompleteWorkoutUseCase
 ) : ScreenModel {
 
     private val _uiState = MutableStateFlow<WorkoutUiState>(WorkoutUiState.Idle)
@@ -83,6 +89,54 @@ class WorkoutViewModel (
                 }
             } catch (e: Exception) {
                 _uiState.value = WorkoutUiState.Error(e.message ?: "Error eliminando workout")
+            }
+        }
+    }
+
+    fun createWorkout(workoutRequest: CreateWorkoutRequest) {
+        screenModelScope.launch {
+            _uiState.value = WorkoutUiState.Loading
+            try {
+                when (val result = createWorkoutUseCase(workoutRequest)) {
+                    is WorkoutResult.SuccessCreateWorkout -> {
+                        _uiState.value = WorkoutUiState.SuccessCreateWorkout(result.createWorkoutData)
+                    }
+
+                    is WorkoutResult.Error -> {
+                        _uiState.value = WorkoutUiState.Error(result.message)
+                    }
+
+                    else -> {}
+                }
+
+            } catch (e: Exception) {
+                _uiState.value = WorkoutUiState.Error(e.message ?: "Error al crear workout")
+            }
+        }
+    }
+
+    fun completeWorkout(id: String, calories: Int, duration: Int, notes: String) {
+        screenModelScope.launch {
+            _uiState.value = WorkoutUiState.Loading
+            try {
+                when (val result = completeWorkoutUseCase(
+                    id,
+                    CompleteWorkoutRequest(calories, duration, notes)
+                )) {
+                    is WorkoutResult.SuccessCompleteWorkout -> {
+                        _uiState.value =
+                            WorkoutUiState.SuccessCompleteWorkout(result.completeWorkoutData)
+                    }
+
+                    is WorkoutResult.Error -> {
+                        _uiState.value = WorkoutUiState.Error(result.message)
+                    }
+
+                    else -> {}
+                }
+
+            } catch (e: Exception) {
+                _uiState.value = WorkoutUiState.Error(e.message ?: "Error completando workout")
             }
         }
     }

@@ -8,7 +8,10 @@ import com.tepuytech.fitzon.domain.usecase.BoxProfileUseCase
 import com.tepuytech.fitzon.domain.usecase.BoxWorkoutUseCase
 import com.tepuytech.fitzon.domain.usecase.ClassesUseCase
 import com.tepuytech.fitzon.domain.usecase.CoachesUseCase
+import com.tepuytech.fitzon.domain.usecase.CompleteWorkoutUseCase
 import com.tepuytech.fitzon.domain.usecase.CreateClassUseCase
+import com.tepuytech.fitzon.domain.usecase.CreateWorkoutUseCase
+import com.tepuytech.fitzon.domain.usecase.DeleteClassUseCase
 import com.tepuytech.fitzon.domain.usecase.DeleteWorkoutUseCase
 import com.tepuytech.fitzon.domain.usecase.IsUserLoggedInUseCase
 import com.tepuytech.fitzon.domain.usecase.LoginUseCase
@@ -75,6 +78,18 @@ val useCaseModule = module {
     }
 
     factory {
+        CreateWorkoutUseCase(
+            workoutRepository = get()
+        )
+    }
+
+    factory {
+        CompleteWorkoutUseCase(
+            workoutRepository = get()
+        )
+    }
+
+    factory {
         BoxDashboardUseCase(
             boxRepository = get()
         )
@@ -112,6 +127,12 @@ val useCaseModule = module {
 
     factory {
         ClassesUseCase(
+            classRepository = get()
+        )
+    }
+
+    factory {
+        DeleteClassUseCase(
             classRepository = get()
         )
     }

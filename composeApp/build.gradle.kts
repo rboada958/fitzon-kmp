@@ -47,6 +47,7 @@ kotlin {
             implementation(libs.voyager.screenmodel)
             implementation(libs.voyager.koin)
             implementation(libs.voyager.transitions)
+            implementation(libs.kotlinx.datetime.v061)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

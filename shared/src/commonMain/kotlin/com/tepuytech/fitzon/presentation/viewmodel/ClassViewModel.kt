@@ -6,6 +6,7 @@ import com.tepuytech.fitzon.domain.model.classes.ClassResult
 import com.tepuytech.fitzon.domain.model.classes.CreateClassRequest
 import com.tepuytech.fitzon.domain.usecase.ClassesUseCase
 import com.tepuytech.fitzon.domain.usecase.CreateClassUseCase
+import com.tepuytech.fitzon.domain.usecase.DeleteClassUseCase
 import com.tepuytech.fitzon.presentation.state.ClassUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +14,8 @@ import kotlinx.coroutines.launch
 
 class ClassViewModel (
     private val createClassUseCase: CreateClassUseCase,
-    private val classesUseCase: ClassesUseCase
+    private val classesUseCase: ClassesUseCase,
+    private val deleteClassUseCase: DeleteClassUseCase
 ) : ScreenModel {
 
     private val _uiState = MutableStateFlow<ClassUiState>(ClassUiState.Idle)
@@ -72,6 +74,31 @@ class ClassViewModel (
             }
         }
     }
+
+    fun deleteClass(classId: String) {
+        screenModelScope.launch {
+            _uiState.value = ClassUiState.LoadingDeleteClass
+            try {
+                when (val result = deleteClassUseCase(classId)) {
+                    is ClassResult.SuccessDeleteClass -> {
+                        _uiState.value = ClassUiState.SuccessDeleteClass("Class deleted successfully")
+                    }
+
+                    is ClassResult.Error -> {
+                        _uiState.value = ClassUiState.Error(result.message)
+                    }
+                    is ClassResult.Empty -> {
+                        _uiState.value = ClassUiState.Empty(result.message)
+                    }
+
+                    else -> {}
+                }
+            } catch (e: Exception) {
+                _uiState.value = ClassUiState.Error(e.message ?: "Unknown error")
+            }
+        }
+    }
+
 
     companion object {
         private val dayOrder = mapOf(

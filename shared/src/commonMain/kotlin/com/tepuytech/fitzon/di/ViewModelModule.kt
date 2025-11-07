@@ -30,7 +30,9 @@ val viewModelModule = module {
         WorkoutViewModel(
             workoutOfTheDayUseCase = get(),
             boxWorkoutUseCase = get(),
-            deleteWorkoutUseCase = get()
+            deleteWorkoutUseCase = get(),
+            createWorkoutUseCase = get(),
+            completeWorkoutUseCase = get()
         )
     }
 
@@ -53,7 +55,8 @@ val viewModelModule = module {
     factory<ClassViewModel> {
         ClassViewModel(
             createClassUseCase = get(),
-            classesUseCase = get()
+            classesUseCase = get(),
+            deleteClassUseCase = get()
         )
     }
 
