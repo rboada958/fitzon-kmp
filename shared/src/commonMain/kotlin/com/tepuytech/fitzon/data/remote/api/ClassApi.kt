@@ -7,6 +7,7 @@ import com.tepuytech.fitzon.domain.model.classes.CreateClassResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -40,5 +41,17 @@ class ClassApi(
         }
 
         return response.body()
+    }
+
+    suspend fun deleteClass(classId: String) {
+        val response = httpClient.delete("/api/classes/$classId") {
+            header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
+        }
+
+        when (response.status) {
+            HttpStatusCode.NoContent -> return
+            HttpStatusCode.Unauthorized -> throw ClientRequestException(response, "Unauthorized")
+            else -> throw ClientRequestException(response, "Error deleting class: ${response.status}")
+        }
     }
 }

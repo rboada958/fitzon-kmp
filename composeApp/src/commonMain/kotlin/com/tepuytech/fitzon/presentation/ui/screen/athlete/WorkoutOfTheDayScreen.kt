@@ -31,6 +31,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -44,6 +45,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,31 +58,143 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.tepuytech.fitzon.domain.model.workout.ExerciseResponse
 import com.tepuytech.fitzon.domain.model.workout.WorkoutResponse
 import com.tepuytech.fitzon.getPlatform
+import com.tepuytech.fitzon.presentation.state.WorkoutUiState
 import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
+import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
+import com.tepuytech.fitzon.presentation.viewmodel.WorkoutViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 class WorkoutOfTheDay(val workout: WorkoutResponse?) : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        val viewModel = getScreenModel<WorkoutViewModel>()
+        val uiState by viewModel.uiState.collectAsState()
+
+        var showCompletionDialog by remember { mutableStateOf(false) }
+
+        LaunchedEffect(uiState) {
+            when (uiState) {
+                is WorkoutUiState.SuccessCompleteWorkout -> {
+                    showCompletionDialog = true
+                }
+                else -> {}
+            }
+        }
 
         WorkoutOfTheDayScreen(
             workout = workout,
             onBackClick = {
                 navigator.pop()
+            },
+            onCompletedWodClick = { id, calories, duration, notes ->
+                viewModel.completeWorkout(
+                    id,
+                    calories,
+                    duration,
+                    notes
+                )
+                println("Workout completado:")
+                println("ID: $id")
+                println("Calorías: $calories")
+                println("Duración: $duration min")
+                println("Notes: $notes")
             }
         )
+
+        if (uiState is WorkoutUiState.Error) {
+            val error = uiState as WorkoutUiState.Error
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(brush = backgroundGradient),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = error.message,
+                        color = Color.Red,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { navigator.pop() },
+                        shape = RoundedCornerShape(28.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = greenPrimary,
+                            disabledContainerColor = Color(0xFF2D6A4F)
+                        )
+                    ) {
+                        Text("Volver")
+                    }
+                }
+            }
+            return
+        }
+
+        if (uiState is WorkoutUiState.Loading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = greenLight,
+                    strokeWidth = 4.dp,
+                    modifier = Modifier.size(60.dp)
+                )
+            }
+        }
+
+        if (showCompletionDialog) {
+            AlertDialog(
+                onDismissRequest = { showCompletionDialog = false },
+                title = {
+                    Text(
+                        text = "🎉 ¡Felicidades!",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Has completado el workout del día. ¡Sigue así!",
+                        fontSize = 16.sp
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showCompletionDialog = false
+
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = greenPrimary
+                        )
+                    ) {
+                        Text("Aceptar", color = Color(0xFF081C15))
+                    }
+                },
+                containerColor = Color(0xFF1B4332),
+                titleContentColor = Color.White,
+                textContentColor = textGray
+            )
+        }
     }
 }
 @OptIn(ExperimentalMaterial3Api::class)
@@ -87,10 +202,11 @@ class WorkoutOfTheDay(val workout: WorkoutResponse?) : Screen {
 fun WorkoutOfTheDayScreen(
     workout: WorkoutResponse? = null,
     onBackClick: () -> Unit,
+    onCompletedWodClick: (String, Int, Int, String) -> Unit = { _, _, _, _ -> }
 ) {
     var exercises by remember { mutableStateOf(workout?.exercises ?: emptyList()) }
 
-    var showCompletionDialog by remember { mutableStateOf(false) }
+
     val allCompleted = if (exercises.isNotEmpty()) exercises.all { it.isCompleted } else false
 
     val buttonScale by animateFloatAsState(
@@ -227,9 +343,7 @@ fun WorkoutOfTheDayScreen(
                                         }
                                     }
                                 },
-                                onEdit = { exerciseId ->
-                                    // Handle edit action
-                                },
+                                onEdit = {},
                                 onDelete = { exerciseId ->
                                     exercises = exercises.filter { it.id != exerciseId }
                                 }
@@ -258,8 +372,20 @@ fun WorkoutOfTheDayScreen(
                 ) {
                     Button(
                         onClick = {
-                            if (allCompleted) {
-                                showCompletionDialog = true
+                            if (allCompleted && workout.id != null) {
+                                val calories = calculateCalories(
+                                    workout.duration ?: 0,
+                                    workout.difficulty ?: ""
+                                )
+
+                                val duration = workout.duration ?: 0
+                                val id = workout.id ?: ""
+
+                                val completedCount = exercises.count { it.isCompleted }
+                                val totalCount = exercises.size
+                                val notes = generateWorkoutNotes(totalCount, completedCount)
+
+                                onCompletedWodClick(id, calories, duration, notes)
                             }
                         },
                         enabled = allCompleted,
@@ -310,41 +436,6 @@ fun WorkoutOfTheDayScreen(
                 )
             }
         }
-    }
-
-    if (showCompletionDialog) {
-        AlertDialog(
-            onDismissRequest = { showCompletionDialog = false },
-            title = {
-                Text(
-                    text = "🎉 ¡Felicidades!",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 24.sp
-                )
-            },
-            text = {
-                Text(
-                    text = "Has completado el workout del día. ¡Sigue así!",
-                    fontSize = 16.sp
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showCompletionDialog = false
-                        // Aquí podrías navegar a otra pantalla o guardar el progreso
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = greenPrimary
-                    )
-                ) {
-                    Text("Aceptar", color = Color(0xFF081C15))
-                }
-            },
-            containerColor = Color(0xFF1B4332),
-            titleContentColor = Color.White,
-            textContentColor = textGray
-        )
     }
 }
 
@@ -521,6 +612,32 @@ fun ExerciseCard(
                 }
             }
         }
+    }
+}
+
+fun calculateCalories(durationMinutes: Int, difficulty: String): Int {
+    val caloriesPerMinute = when (difficulty.uppercase()) {
+        "BEGINNER", "SCALED" -> 10.0
+        "INTERMEDIATE", "RX" -> 12.5
+        "ADVANCED", "RX / SCALED" -> 15.0
+        else -> 12.0
+    }
+
+    return (durationMinutes * caloriesPerMinute).toInt()
+}
+
+fun generateWorkoutNotes(totalExercises: Int, completedExercises: Int): String {
+    val percentage = if (totalExercises > 0) {
+        (completedExercises.toFloat() / totalExercises * 100).toInt()
+    } else {
+        0
+    }
+
+    return when {
+        percentage == 100 -> "¡Workout completado al 100%! 💪🔥"
+        percentage >= 80 -> "Gran esfuerzo, completado al $percentage% 💪"
+        percentage >= 50 -> "Buen trabajo, completado al $percentage% 👍"
+        else -> "Workout parcialmente completado ($percentage%)"
     }
 }
 

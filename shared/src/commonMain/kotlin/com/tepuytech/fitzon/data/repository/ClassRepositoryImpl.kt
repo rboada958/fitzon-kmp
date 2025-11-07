@@ -84,4 +84,35 @@ class ClassRepositoryImpl(
             throw ApiException(e.message ?: "Connection error")
         }
     }
+
+    override suspend fun deleteClass(classId: String) {
+        try {
+            apiService.deleteClass(classId)
+        } catch (e: ClientRequestException) {
+            if (e.response.status == HttpStatusCode.Unauthorized) {
+                try {
+                    val tokenResponse = api.refreshToken()
+                    sessionManager.updateTokens(
+                        accessToken = tokenResponse.accessToken,
+                        refreshToken = tokenResponse.refreshToken
+                    )
+                    apiService.deleteClass(classId)
+                } catch (_: Exception) {
+                    throw ApiException("Authentication failed - please login again")
+                }
+            } else {
+                try {
+                    val errorResponse = e.response.body<BoxDashboardResponse>()
+                    throw ApiException(errorResponse.message ?: "Unknown error")
+                } catch (e: Exception) {
+                    println("Error: ${e.message}")
+                    throw ApiException("Failed to delete workout")
+                }
+            }
+        } catch (_: ServerResponseException) {
+            throw ApiException("Server error")
+        } catch (e: Exception) {
+            throw ApiException(e.message ?: "Connection error")
+        }
+    }
 }

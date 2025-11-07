@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
@@ -78,7 +79,7 @@ class ManageClasses(val boxId: String) : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = getScreenModel<ClassViewModel>()
         val uiState by viewModel.uiState.collectAsState()
-
+        var classState by remember { mutableStateOf(emptyList<ClassesResponse>()) }
         LaunchedEffect(Unit) {
             viewModel.getClasses(boxId)
         }
@@ -89,18 +90,38 @@ class ManageClasses(val boxId: String) : Screen {
                 return
             }
             is ClassUiState.Success -> {
-                val classState = (uiState as ClassUiState.Success).classes
-                ManageClassesScreen(
-                    classesState = classState,
-                    onBackClick = { navigator.pop() },
-                    onCreateClassClick = { navigator.push(CreateClass(boxId)) }
-                )
+                classState = (uiState as ClassUiState.Success).classes
+
             }
             is ClassUiState.Error -> {
                 Text("Error: ${(uiState as ClassUiState.Error).message}")
             }
 
             else -> {}
+        }
+
+        ManageClassesScreen(
+            classesState = classState,
+            onBackClick = { navigator.pop() },
+            onCreateClassClick = { navigator.push(CreateClass(boxId)) },
+            onDeleteClass = { classId ->
+                viewModel.deleteClass(classId)
+            }
+        )
+
+        if (uiState is ClassUiState.LoadingDeleteClass) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = greenLight,
+                    strokeWidth = 4.dp,
+                    modifier = Modifier.size(60.dp)
+                )
+            }
         }
     }
 }
@@ -110,6 +131,8 @@ fun ManageClassesScreen(
     classesState: List<ClassesResponse> = emptyList(),
     onBackClick: () -> Unit = {},
     onCreateClassClick: () -> Unit = {},
+    onEditClass: (String) -> Unit = {},
+    onDeleteClass: (String) -> Unit = {}
 ) {
     var classes by remember {
         mutableStateOf(
@@ -444,7 +467,7 @@ fun ManageClassesScreen(
                         }
 
                         OutlinedButton(
-                            onClick = { /* Editar */ },
+                            onClick = { onEditClass(selectedClass!!.id) },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = greenLight
@@ -479,7 +502,11 @@ fun ManageClassesScreen(
                         }
 
                         OutlinedButton(
-                            onClick = { /* Eliminar */ },
+                            onClick = {
+                                classes = classes.filter { it.id != selectedClass!!.id }
+                                onDeleteClass(selectedClass!!.id)
+                                showClassDetails = false
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = Color(0xFFFF6B6B)

@@ -109,6 +109,9 @@ class ManageWorkouts(val boxId: String) : Screen {
             },
             onDeleteWorkout = { workoutId ->
                 viewModel.deleteWorkout(workoutId)
+            },
+            onCreateWorkoutClick = {
+                navigator.push(CreateWorkout())
             }
         )
 
@@ -134,7 +137,8 @@ fun ManageWorkoutsScreen(
     dayWorkouts: List<DayWorkouts> = emptyList(),
     onBackClick: () -> Unit = {},
     onEditWorkout: (String) -> Unit = {},
-    onDeleteWorkout: (String) -> Unit = { _ -> }
+    onDeleteWorkout: (String) -> Unit = { _ -> },
+    onCreateWorkoutClick: () -> Unit = {}
 ) {
     var weeklyWorkouts by remember {
         mutableStateOf(
@@ -192,7 +196,7 @@ fun ManageWorkoutsScreen(
         containerColor = Color.Transparent,
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { /* Agregar workout */ },
+                onClick = { onCreateWorkoutClick() },
                 containerColor = greenPrimary,
                 contentColor = Color(0xFF081C15)
             ) {
