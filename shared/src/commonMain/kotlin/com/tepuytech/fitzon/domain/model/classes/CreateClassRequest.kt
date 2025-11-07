@@ -10,7 +10,7 @@ data class CreateClassRequest(
     val startTime: String,
     val endTime: String,
     val dayOfWeek: String,
-    val maxCapacity: Long,
+    val maxCapacity: Int,
     val level: String,
     val workoutId: String
 )

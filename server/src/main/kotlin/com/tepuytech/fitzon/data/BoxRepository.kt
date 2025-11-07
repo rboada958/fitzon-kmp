@@ -140,7 +140,7 @@ class BoxRepository {
                 .uppercase()
 
             val currentTime = LocalDateTime.now()
-            val currentTimeStr = String.format("%02d:%02d", currentTime.hour, currentTime.minute)
+            val currentTimeStr = currentTime.hour * 60 + currentTime.minute
 
             val todayClasses = try {
                 ClassSchedules.selectAll()
@@ -149,7 +149,7 @@ class BoxRepository {
                                 (ClassSchedules.dayOfWeek eq currentDay) and
                                 (ClassSchedules.isActive eq true)
                     }
-                    .orderBy(ClassSchedules.time)
+                    .orderBy(ClassSchedules.startTime)
                     .map { schedule ->
                         val coachId = schedule[ClassSchedules.coachId]
                         val coach = Coaches.innerJoin(Users)
@@ -478,16 +478,15 @@ class BoxRepository {
         return streak
     }
 
-    private fun isClassNow(startTime: String, endTime: String, currentTime: String): Boolean {
-        try {
-            // Converter "09:00 AM" a minutos desde medianoche
+    private fun isClassNow(startTime: String, endTime: String, currentTime: Int): Boolean {
+        return try {
             val start = parseTimeToMinutes(startTime)
             val end = parseTimeToMinutes(endTime)
-            val now = parseTimeToMinutes(currentTime)
 
-            return now in start..end
-        } catch (_: Exception) {
-            return false
+            currentTime in start..end
+        } catch (e: Exception) {
+            println("Error checking isClassNow: $e")
+            false
         }
     }
 

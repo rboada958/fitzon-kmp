@@ -5,9 +5,11 @@ import com.tepuytech.fitzon.domain.usecase.AthleteProfileUseCase
 import com.tepuytech.fitzon.domain.usecase.BoxDashboardUseCase
 import com.tepuytech.fitzon.domain.usecase.BoxInfoUseCase
 import com.tepuytech.fitzon.domain.usecase.BoxProfileUseCase
+import com.tepuytech.fitzon.domain.usecase.BoxWorkoutUseCase
 import com.tepuytech.fitzon.domain.usecase.ClassesUseCase
 import com.tepuytech.fitzon.domain.usecase.CoachesUseCase
 import com.tepuytech.fitzon.domain.usecase.CreateClassUseCase
+import com.tepuytech.fitzon.domain.usecase.DeleteWorkoutUseCase
 import com.tepuytech.fitzon.domain.usecase.IsUserLoggedInUseCase
 import com.tepuytech.fitzon.domain.usecase.LoginUseCase
 import com.tepuytech.fitzon.domain.usecase.LogoutUseCase
@@ -56,6 +58,18 @@ val useCaseModule = module {
     }
     factory {
         WorkoutOfTheDayUseCase(
+            workoutRepository = get()
+        )
+    }
+
+    factory {
+        BoxWorkoutUseCase(
+            workoutRepository = get()
+        )
+    }
+
+    factory {
+        DeleteWorkoutUseCase(
             workoutRepository = get()
         )
     }

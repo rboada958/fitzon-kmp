@@ -16,8 +16,10 @@
       <w>amenidades</w>
       <w>aprobar</w>
       <w>asignado</w>
+      <w>asignar</w>
       <w>atleta</w>
       <w>atletas</w>
+      <w>avanzado</w>
       <w>años</w>
       <w>bueno</w>
       <w>buscar</w>
@@ -30,9 +32,11 @@
       <w>cerrar</w>
       <w>clase</w>
       <w>clases</w>
+      <w>completa</w>
       <w>completado</w>
       <w>completados</w>
       <w>configuración</w>
+      <w>confirmar</w>
       <w>consecutivo</w>
       <w>consecutivos</w>
       <w>consistente</w>
@@ -41,7 +45,9 @@
       <w>continuar</w>
       <w>contraseña</w>
       <w>convertir</w>
+      <w>correctamente</w>
       <w>corta</w>
+      <w>creada</w>
       <w>creado</w>
       <w>crear</w>
       <w>cuenta</w>
@@ -54,11 +60,14 @@
       <w>detalles</w>
       <w>dirección</w>
       <w>disponible</w>
+      <w>disponibles</w>
       <w>diálogo</w>
       <w>duración</w>
       <w>edad</w>
       <w>editar</w>
       <w>ejercicios</w>
+      <w>eliminado</w>
+      <w>eliminando</w>
       <w>eliminar</w>
       <w>empezar</w>
       <w>entrenadores</w>
@@ -66,6 +75,7 @@
       <w>entrenando</w>
       <w>enviar</w>
       <w>estadísticas</w>
+      <w>estás</w>
       <w>excelente</w>
       <w>existe</w>
       <w>exitosamente</w>
@@ -88,22 +98,30 @@
       <w>información</w>
       <w>ingreso</w>
       <w>iniciar</w>
+      <w>inicio</w>
       <w>inscritos</w>
       <w>instalaciones</w>
+      <w>intermedio</w>
       <w>inválido</w>
+      <w>jueves</w>
       <w>lista</w>
       <w>listar</w>
       <w>llena</w>
       <w>llenas</w>
       <w>logros</w>
+      <w>lunes</w>
       <w>límites</w>
+      <w>martes</w>
       <w>mejor</w>
       <w>membresía</w>
       <w>miembro</w>
       <w>miembros</w>
       <w>minutos</w>
+      <w>miércoles</w>
+      <w>nivel</w>
       <w>nombre</w>
       <w>nueva</w>
+      <w>obligatorios</w>
       <w>obtener</w>
       <w>obtiene</w>
       <w>olvidaste</w>
@@ -115,7 +133,9 @@
       <w>pertenece</w>
       <w>política</w>
       <w>primera</w>
+      <w>principiante</w>
       <w>privacidad</w>
+      <w>programados</w>
       <w>progreso</w>
       <w>promedio</w>
       <w>pueden</w>
@@ -130,12 +150,17 @@
       <w>retornar</w>
       <w>sección</w>
       <w>seguidos</w>
+      <w>seguro</w>
+      <w>selecciona</w>
+      <w>seleccionado</w>
+      <w>seleccionar</w>
       <w>semana</w>
       <w>servicio</w>
       <w>sesión</w>
       <w>sido</w>
       <w>sistema</w>
       <w>supera</w>
+      <w>sábado</w>
       <w>teléfono</w>
       <w>tienes</w>
       <w>todas</w>
@@ -147,6 +172,7 @@
       <w>valoración</w>
       <w>valorar</w>
       <w>verificar</w>
+      <w>viernes</w>
       <w>volver</w>
       <w>válido</w>
     </words>

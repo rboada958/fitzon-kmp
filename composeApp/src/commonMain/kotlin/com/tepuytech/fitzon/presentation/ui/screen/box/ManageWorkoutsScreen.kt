@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,6 +37,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,34 +50,91 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.tepuytech.fitzon.data.dayWorkouts
 import com.tepuytech.fitzon.domain.model.DayWorkouts
 import com.tepuytech.fitzon.domain.model.WorkoutItem
+import com.tepuytech.fitzon.domain.model.workout.BoxWorkoutResponse
 import com.tepuytech.fitzon.getPlatform
+import com.tepuytech.fitzon.presentation.state.WorkoutUiState
+import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
 import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
+import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
+import com.tepuytech.fitzon.presentation.viewmodel.WorkoutViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-class ManageWorkouts : Screen {
+class ManageWorkouts(val boxId: String) : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        val viewModel = getScreenModel<WorkoutViewModel>()
+        val uiState by viewModel.uiState.collectAsState()
+        var dayWorkouts by remember { mutableStateOf(emptyList<DayWorkouts>()) }
+
+
+        LaunchedEffect(Unit) {
+            viewModel.boxWorkout(boxId)
+        }
+
+        when (uiState) {
+            is WorkoutUiState.Loading -> {
+                AthleteDashboardShimmer()
+                return
+            }
+            is WorkoutUiState.SuccessBoxWorkout -> {
+                val workoutState = (uiState as WorkoutUiState.SuccessBoxWorkout).boxWorkoutData
+                dayWorkouts = groupWorkoutByDay(workoutState)
+            }
+            is WorkoutUiState.SuccessDeleteWorkout -> {
+                val workoutState = (uiState as WorkoutUiState.SuccessDeleteWorkout).message
+                println(workoutState)
+            }
+            is WorkoutUiState.Error -> {
+                Text("Error: ${(uiState as WorkoutUiState.Error).message}")
+            }
+
+            else -> {}
+        }
 
         ManageWorkoutsScreen(
+            dayWorkouts = dayWorkouts,
             onBackClick = {
                 navigator.pop()
+            },
+            onEditWorkout = {
+            },
+            onDeleteWorkout = { workoutId ->
+                viewModel.deleteWorkout(workoutId)
             }
         )
+
+        if (uiState is WorkoutUiState.LoadingDeleteWorkout) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = greenLight,
+                    strokeWidth = 4.dp,
+                    modifier = Modifier.size(60.dp)
+                )
+            }
+        }
     }
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManageWorkoutsScreen(
-    onBackClick: () -> Unit = {}
+    dayWorkouts: List<DayWorkouts> = emptyList(),
+    onBackClick: () -> Unit = {},
+    onEditWorkout: (String) -> Unit = {},
+    onDeleteWorkout: (String) -> Unit = { _ -> }
 ) {
     var weeklyWorkouts by remember {
         mutableStateOf(
@@ -83,7 +143,7 @@ fun ManageWorkoutsScreen(
     }
 
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var workoutToDelete by remember { mutableStateOf<Pair<String, Int>?>(null) }
+    var workoutToDelete by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     val platform = getPlatform()
 
@@ -170,7 +230,7 @@ fun ManageWorkoutsScreen(
                         cardBackground = cardBackground,
                         textGray = textGray,
                         onEditWorkout = { workoutId ->
-                            // Acción de editar
+                            onEditWorkout(workoutId)
                         },
                         onDeleteWorkout = { day, workoutId ->
                             workoutToDelete = day to workoutId
@@ -213,6 +273,7 @@ fun ManageWorkoutsScreen(
                         }
                         showDeleteDialog = false
                         workoutToDelete = null
+                        onDeleteWorkout(workoutId)
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFFF6B6B)
@@ -238,8 +299,8 @@ fun DaySection(
     dayWorkouts: DayWorkouts,
     cardBackground: Color,
     textGray: Color,
-    onEditWorkout: (Int) -> Unit,
-    onDeleteWorkout: (String, Int) -> Unit
+    onEditWorkout: (String) -> Unit,
+    onDeleteWorkout: (String, String) -> Unit
 ) {
     Column {
         Text(
@@ -428,6 +489,47 @@ fun WorkoutCard(
                 }
             }
         }
+    }
+}
+
+private fun groupWorkoutByDay(workouts: List<BoxWorkoutResponse>): List<DayWorkouts> {
+    val backendDays = listOf(
+        "MONDAY", "TUESDAY", "WEDNESDAY",
+        "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"
+    )
+
+    // Mapeo inglés -> español
+    val dayTranslations = mapOf(
+        "MONDAY" to "Lunes",
+        "TUESDAY" to "Martes",
+        "WEDNESDAY" to "Miércoles",
+        "THURSDAY" to "Jueves",
+        "FRIDAY" to "Viernes",
+        "SATURDAY" to "Sábado",
+        "SUNDAY" to "Domingo"
+    )
+
+    val grouped = workouts.groupBy { it.dayOfWeek.uppercase() }
+
+    return backendDays.map { backendDay ->
+        val dayWorkouts = grouped[backendDay]?.map {
+            WorkoutItem(
+                id = it.id,
+                name = it.title,
+                type = it.difficulty,
+                icon = when (it.difficulty.lowercase()) {
+                    "strength" -> "🏋️"
+                    "cardio" -> "🏃"
+                    "flexibility" -> "🧘"
+                    else -> "💪"
+                }
+            )
+        } ?: emptyList()
+
+        DayWorkouts(
+            day = dayTranslations[backendDay] ?: backendDay,
+            workouts = dayWorkouts
+        )
     }
 }
 
