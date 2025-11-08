@@ -8,6 +8,7 @@ import com.tepuytech.fitzon.models.RefreshTokenRequest
 import com.tepuytech.fitzon.models.RegisterRequest
 import com.tepuytech.fitzon.models.TokenResponse
 import com.tepuytech.fitzon.models.UpdateProfileRequest
+import com.tepuytech.fitzon.models.UserDTO
 import com.tepuytech.fitzon.models.UserResponse
 import com.tepuytech.fitzon.utils.JwtConfig
 import io.ktor.http.HttpStatusCode
@@ -21,6 +22,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
+import java.util.UUID
 
 
 fun Route.authRoutes(repo: AuthRepository) {
@@ -58,12 +60,27 @@ fun Route.authRoutes(repo: AuthRepository) {
             if (user == null) {
                 call.respond(HttpStatusCode.Conflict, ErrorResponse("User already exists or invalid data"))
             } else {
-                val tokens = JwtConfig.generateTokenPair(user.id)
-                call.respond(HttpStatusCode.Created, AuthResponse(
-                    accessToken = tokens.accessToken,
-                    refreshToken = tokens.refreshToken,
-                    user = user
-                ))
+                val userUuid = UUID.fromString(user.id)
+                val roles = repo.getUserRoles(userUuid)
+
+                val finalRoles = roles.ifEmpty { listOf(request.role) }
+
+                val tokens = JwtConfig.generateTokenPair(user.id, finalRoles)
+
+                call.respond(
+                    HttpStatusCode.Created,
+                    AuthResponse(
+                        accessToken = tokens.accessToken,
+                        refreshToken = tokens.refreshToken,
+                        user = UserDTO(
+                            id = user.id,
+                            email = user.email,
+                            name = user.name,
+                            roles = finalRoles,
+                            profileImageUrl = user.profileImageUrl
+                        )
+                    )
+                )
             }
         }
 
@@ -79,13 +96,25 @@ fun Route.authRoutes(repo: AuthRepository) {
             if (user == null) {
                 call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid credentials"))
             } else {
-                val tokens = JwtConfig.generateTokenPair(user.id)
+                val userUuid = UUID.fromString(user.id)
+                val roles = repo.getUserRoles(userUuid)
+
+                val finalRoles = roles.ifEmpty { listOf("ATHLETE") }
+
+                val tokens = JwtConfig.generateTokenPair(user.id, finalRoles)
+
                 call.respond(
                     HttpStatusCode.OK,
                     AuthResponse(
                         accessToken = tokens.accessToken,
                         refreshToken = tokens.refreshToken,
-                        user = user
+                        user = UserDTO(
+                            id = user.id,
+                            email = user.email,
+                            name = user.name,
+                            roles = finalRoles,
+                            profileImageUrl = user.profileImageUrl
+                        )
                     )
                 )
             }
@@ -106,7 +135,11 @@ fun Route.authRoutes(repo: AuthRepository) {
                 return@post
             }
 
-            val newTokens = JwtConfig.generateTokenPair(userId)
+            val userUuid = UUID.fromString(userId)
+            val roles = repo.getUserRoles(userUuid)
+            val finalRoles = roles.ifEmpty { listOf("ATHLETE") }
+
+            val newTokens = JwtConfig.generateTokenPair(userId, finalRoles)
             call.respond(
                 HttpStatusCode.OK,
                 TokenResponse(

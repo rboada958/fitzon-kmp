@@ -1,11 +1,29 @@
 package com.tepuytech.fitzon.data
 
-import com.tepuytech.fitzon.models.*
-import org.jetbrains.exposed.sql.*
+import com.tepuytech.fitzon.models.Athletes
+import com.tepuytech.fitzon.models.Boxes
+import com.tepuytech.fitzon.models.ClassSchedules
+import com.tepuytech.fitzon.models.CompleteWorkoutResponse
+import com.tepuytech.fitzon.models.CreateExerciseRequest
+import com.tepuytech.fitzon.models.ExerciseData
+import com.tepuytech.fitzon.models.ExerciseResponse
+import com.tepuytech.fitzon.models.Exercises
+import com.tepuytech.fitzon.models.PersonalRecordDetected
+import com.tepuytech.fitzon.models.PersonalRecords
+import com.tepuytech.fitzon.models.WorkoutCompletionStats
+import com.tepuytech.fitzon.models.WorkoutLogResponse
+import com.tepuytech.fitzon.models.WorkoutLogs
+import com.tepuytech.fitzon.models.WorkoutResponse
+import com.tepuytech.fitzon.models.Workouts
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.javatime.date
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.UUID
 
 class WorkoutRepository {
@@ -319,75 +337,135 @@ class WorkoutRepository {
     fun completeWorkout(
         userId: String,
         workoutId: String,
-        caloriesBurned: Int?,
-        durationMinutes: Int?,
-        notes: String?
-    ): WorkoutLogResponse? = transaction {
+        caloriesBurned: Int,
+        durationMinutes: Int,
+        notes: String
+    ): CompleteWorkoutResponse? = transaction {
         try {
             val userUuid = UUID.fromString(userId)
             val workoutUuid = UUID.fromString(workoutId)
 
-            // Obtener el athlete
-            val athlete = Athletes.selectAll()
+            val athlete = Athletes
+                .selectAll()
                 .where { Athletes.userId eq userUuid }
                 .singleOrNull() ?: return@transaction null
 
             val athleteId = athlete[Athletes.id]
 
-            // Verificar que el workout existe
-            val workoutExists = Workouts.selectAll()
-                .where { Workouts.id eq workoutUuid }
-                .count() > 0
+            val workoutLogId = UUID.randomUUID()
 
-            if (!workoutExists) {
-                println("⚠️ Workout not found")
-                return@transaction null
-            }
-
-            // Verificar si ya completó este workout hoy
-            val today = LocalDate.now()
-            val existingLog = WorkoutLogs.selectAll()
-                .where {
-                    (WorkoutLogs.athleteId eq athleteId) and
-                            (WorkoutLogs.workoutId eq workoutUuid) and
-                            (WorkoutLogs.completedAt.date() eq today)
-                }
-                .singleOrNull()
-
-            if (existingLog != null) {
-                println("⚠️ Athlete already completed this workout today")
-                return@transaction null
-            }
-
-            // Crear log del workout
-            val logId = UUID.randomUUID()
             WorkoutLogs.insert {
-                it[WorkoutLogs.id] = logId
+                it[WorkoutLogs.id] = workoutLogId
                 it[WorkoutLogs.athleteId] = athleteId
                 it[WorkoutLogs.workoutId] = workoutUuid
+                it[WorkoutLogs.completedAt] = LocalDateTime.now()
                 it[WorkoutLogs.caloriesBurned] = caloriesBurned
                 it[WorkoutLogs.durationMinutes] = durationMinutes
                 it[WorkoutLogs.notes] = notes
             }
 
-            // Obtener el log creado
-            val log = WorkoutLogs.selectAll()
-                .where { WorkoutLogs.id eq logId }
-                .single()
+            val exercises = Exercises
+                .selectAll()
+                .where { Exercises.workoutId eq workoutUuid }
+                .map { row ->
+                    ExerciseData(
+                        name = row[Exercises.name],
+                        sets = row[Exercises.sets],
+                        reps = row[Exercises.reps]
+                    )
+                }
 
-            WorkoutLogResponse(
-                id = logId.toString(),
-                athleteId = athleteId.toString(),
-                workoutId = workoutUuid.toString(),
-                completedAt = log[WorkoutLogs.completedAt].toString(),
-                caloriesBurned = log[WorkoutLogs.caloriesBurned],
-                durationMinutes = log[WorkoutLogs.durationMinutes],
-                notes = log[WorkoutLogs.notes]
+            val detectedPRs = detectPersonalRecords(athleteId, exercises)
+
+            detectedPRs.filter { it.isNewRecord }.forEach { pr ->
+                PersonalRecords.insert {
+                    it[PersonalRecords.id] = UUID.randomUUID()
+                    it[PersonalRecords.athleteId] = athleteId
+                    it[exerciseName] = pr.exerciseName
+                    it[value] = pr.newBest.toString()
+                    it[unit] = "reps"
+                    it[achievedAt] = LocalDateTime.now()
+                }
+            }
+
+            CompleteWorkoutResponse(
+                message = if (detectedPRs.isNotEmpty()) {
+                    "¡Workout completado! ${detectedPRs.size} nuevo(s) PR(s) detectado(s) 🎉"
+                } else {
+                    "Workout completado exitosamente"
+                },
+                workoutLog = WorkoutLogResponse(
+                    id = workoutLogId.toString(),
+                    workoutId = workoutId,
+                    athleteId = athleteId.toString(),
+                    completedAt = LocalDateTime.now().toString(),
+                    caloriesBurned = caloriesBurned,
+                    durationMinutes = durationMinutes,
+                    notes = notes
+                ),
+                personalRecords = detectedPRs,
+                stats = WorkoutCompletionStats(
+                    totalPRsToday = detectedPRs.count { it.isNewRecord },
+                    caloriesBurned = caloriesBurned,
+                    durationMinutes = durationMinutes
+                )
             )
+
         } catch (e: Exception) {
-            println("Error in completeWorkout: ${e.message}")
+            println("Error completing workout: ${e.message}")
             e.printStackTrace()
             null
+        }
+    }
+
+    private fun detectPersonalRecords(
+        athleteId: UUID,
+        exercises: List<ExerciseData>
+    ): List<PersonalRecordDetected> {
+        return exercises.mapNotNull { exercise ->
+            try {
+                val currentTotal = exercise.sets * exercise.reps
+
+                val previousBestRow = PersonalRecords
+                    .selectAll()
+                    .where {
+                        (PersonalRecords.athleteId eq athleteId) and
+                                (PersonalRecords.exerciseName eq exercise.name)
+                    }
+                    .orderBy(PersonalRecords.achievedAt to SortOrder.DESC)  // Más reciente primero
+                    .firstOrNull()
+
+                val previousBest = previousBestRow?.let { row ->
+                    try {
+                        row[PersonalRecords.value].toIntOrNull()
+                    } catch (_: Exception) {
+                        null
+                    }
+                }
+
+                val isNewPR = previousBest == null || currentTotal > previousBest
+
+                if (isNewPR) {
+                    PersonalRecordDetected(
+                        exerciseName = exercise.name,
+                        previousBest = previousBest,
+                        newBest = currentTotal,
+                        improvement = if (previousBest != null) {
+                            val diff = currentTotal - previousBest
+                            "+$diff reps"
+                        } else {
+                            "First record!"
+                        },
+                        isNewRecord = true
+                    )
+                } else {
+                    null
+                }
+
+            } catch (e: Exception) {
+                println("Error detecting PR for ${exercise.name}: ${e.message}")
+                null
+            }
         }
     }
 }

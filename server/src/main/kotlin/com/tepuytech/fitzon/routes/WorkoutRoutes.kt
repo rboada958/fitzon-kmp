@@ -121,10 +121,15 @@ fun Route.workoutRoutes(repo: WorkoutRepository) {
             post("/{workoutId}/complete") {
                 val principal = call.principal<JWTPrincipal>()
                 val userId = principal?.payload?.getClaim("id")?.asString()
-                val workoutId = call.parameters["workoutId"]
 
-                if (userId.isNullOrEmpty() || workoutId.isNullOrEmpty()) {
-                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid parameters"))
+                if (userId.isNullOrEmpty()) {
+                    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                    return@post
+                }
+
+                val workoutId = call.parameters["workoutId"]
+                if (workoutId.isNullOrEmpty()) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Workout ID is required"))
                     return@post
                 }
 
@@ -135,18 +140,18 @@ fun Route.workoutRoutes(repo: WorkoutRepository) {
                     return@post
                 }
 
-                val log = repo.completeWorkout(
-                    userId,
-                    workoutId,
-                    request.caloriesBurned,
-                    request.durationMinutes,
-                    request.notes
+                val result = repo.completeWorkout(
+                    userId = userId,
+                    workoutId = workoutId,
+                    caloriesBurned = request.caloriesBurned,
+                    durationMinutes = request.durationMinutes,
+                    notes = request.notes
                 )
 
-                if (log == null) {
-                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Failed to complete workout. You may have already completed it today."))
+                if (result == null) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Failed to complete workout"))
                 } else {
-                    call.respond(HttpStatusCode.Created, log)
+                    call.respond(HttpStatusCode.OK, result)
                 }
             }
         }
