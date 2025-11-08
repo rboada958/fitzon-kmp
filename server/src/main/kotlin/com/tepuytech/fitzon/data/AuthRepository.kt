@@ -70,11 +70,14 @@ class AuthRepository {
             it[Athletes.userId] = userId
             if (validBoxId != null) it[Athletes.boxId] = validBoxId
         }
+
+        val roles = getUserRoles(userId)
+
         UserDTO(
             id = userId.toString(),
             email = email,
             name = name,
-            role = "ATHLETE",
+            roles = roles,
             profileImageUrl = null,
             createdAt = null
         )
@@ -110,11 +113,13 @@ class AuthRepository {
             it[Boxes.ownerId] = userId
         }
 
+        val roles = getUserRoles(userId)
+
         UserDTO(
             id = userId.toString(),
             email = email,
             name = boxName,
-            role = "BOX_OWNER",
+            roles = roles,
             profileImageUrl = null,
             createdAt = null
         )
@@ -128,11 +133,14 @@ class AuthRepository {
             .verified
 
         if (valid) {
+            val userId = userRow[Users.id]
+            val roles = getUserRoles(userId)
+
             UserDTO(
                 userRow[Users.id].toString(),
                 userRow[Users.email],
                 userRow[Users.name],
-                userRow[Users.role],
+                roles,
                 userRow[Users.profileImageUrl],
                 userRow[Users.createdAt].toString()
             )
@@ -141,16 +149,18 @@ class AuthRepository {
 
     fun findById(id: String): UserDTO? = transaction {
         try {
-            Users.selectAll().where { Users.id eq UUID.fromString(id) }
-                .map {
-                    UserDTO(
-                        it[Users.id].toString(),
-                        it[Users.email],
-                        it[Users.name],
-                        it[Users.role]
-                    )
-                }
-                .singleOrNull()
+            val userRow = Users.selectAll().where { Users.id eq UUID.fromString(id) }
+                .singleOrNull() ?: return@transaction null
+
+            val userId = userRow[Users.id]
+            val roles = getUserRoles(userId)
+
+            UserDTO(
+                id = userId.toString(),
+                email = userRow[Users.email],
+                name = userRow[Users.name],
+                roles = roles
+            )
         } catch (_: Exception) {
             null
         }
@@ -162,6 +172,7 @@ class AuthRepository {
             .map { row ->
                 val role = row[Users.role]
                 val userId = row[Users.id]
+                val roles = getUserRoles(userId)
 
                 // Obtener box info si es ATHLETE
                 val athleteBox = if (role == "ATHLETE") {
@@ -185,7 +196,7 @@ class AuthRepository {
                     id = userId.toString(),
                     email = row[Users.email],
                     name = row[Users.name],
-                    role = role,
+                    roles = roles,
                     boxId = athleteBox?.get(Boxes.id)?.toString()
                         ?: coachBox?.get(Boxes.id)?.toString(),
                     boxName = athleteBox?.get(Boxes.name)
@@ -206,5 +217,46 @@ class AuthRepository {
         } catch (_: Exception) {
             null
         }
+    }
+
+    fun getUserRoles(userId: UUID): List<String> = transaction {
+        val roles = mutableListOf<String>()
+
+        try {
+            // Verificar si es Box Owner
+            val isBoxOwner = Boxes
+                .selectAll()
+                .where { Boxes.ownerId eq userId }
+                .count() > 0
+
+            if (isBoxOwner) {
+                roles.add("BOX_OWNER")
+            }
+
+            // Verificar si es Athlete
+            val isAthlete = Athletes
+                .selectAll()
+                .where { Athletes.userId eq userId }
+                .count() > 0
+
+            if (isAthlete) {
+                roles.add("ATHLETE")
+            }
+
+            // Verificar si es Coach
+            val isCoach = Coaches
+                .selectAll()
+                .where { Coaches.userId eq userId }
+                .count() > 0
+
+            if (isCoach) {
+                roles.add("COACH")
+            }
+
+        } catch (e: Exception) {
+            println("Error getting user roles: ${e.message}")
+        }
+
+        return@transaction roles
     }
 }

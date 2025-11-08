@@ -80,6 +80,7 @@ class Login() : Screen {
             if (isLoggedIn) {
                 when (userRole) {
                     "ATHLETE" -> navigator.replaceAll(AthleteDashboard())
+                    "COACH" -> navigator.replaceAll(AthleteDashboard())
                     "BOX_OWNER" -> navigator.replaceAll(BoxDashboard())
                     else -> {}
                 }

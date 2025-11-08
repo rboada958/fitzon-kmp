@@ -40,9 +40,9 @@ object JwtConfig {
      * @param userId ID del usuario
      * @return TokenPair con ambos tokens
      */
-    fun generateTokenPair(userId: String): TokenPair {
-        val accessToken = makeAccessToken(userId)
-        val refreshToken = makeRefreshToken(userId)
+    fun generateTokenPair(userId: String, roles: List<String>): TokenPair {
+        val accessToken = makeAccessToken(userId, roles)
+        val refreshToken = makeRefreshToken(userId, roles)
 
         return TokenPair(
             accessToken = accessToken,
@@ -56,11 +56,12 @@ object JwtConfig {
      * @param userId ID del usuario
      * @return JWT token como String
      */
-    fun makeAccessToken(userId: String): String {
+    fun makeAccessToken(userId: String, roles: List<String>): String {
         return JWT.create()
             .withIssuer(ISSUER)
             .withAudience(AUDIENCE)
             .withClaim("id", userId)
+            .withClaim("roles", roles)
             .withClaim("type", "access")
             .withExpiresAt(Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
             .sign(algorithm)
@@ -71,10 +72,11 @@ object JwtConfig {
      * @param userId ID del usuario
      * @return JWT token como String
      */
-    fun makeRefreshToken(userId: String): String {
+    fun makeRefreshToken(userId: String, roles: List<String>): String {
         return JWT.create()
             .withIssuer(ISSUER)
             .withClaim("id", userId)
+            .withClaim("roles", roles)
             .withClaim("type", "refresh")
             .withExpiresAt(Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION_TIME))
             .sign(refreshAlgorithm)
@@ -91,6 +93,15 @@ object JwtConfig {
             decoded.getClaim("id").asString()
         } catch (_: JWTVerificationException) {
             null
+        }
+    }
+
+    fun getRolesFromRefreshToken(token: String): List<String> {
+        return try {
+            val decoded = refreshVerifier.verify(token)
+            decoded.getClaim("roles").asList(String::class.java) ?: emptyList()
+        } catch (_: JWTVerificationException) {
+            emptyList()
         }
     }
 }

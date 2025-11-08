@@ -54,9 +54,9 @@ data class ExerciseResponse(
 
 @Serializable
 data class CompleteWorkoutRequest(
-    val caloriesBurned: Int? = null,
-    val durationMinutes: Int? = null,
-    val notes: String? = null
+    val caloriesBurned: Int,
+    val durationMinutes: Int,
+    val notes: String
 )
 
 @Serializable
@@ -68,4 +68,34 @@ data class WorkoutLogResponse(
     val caloriesBurned: Int?,
     val durationMinutes: Int?,
     val notes: String?
+)
+
+@Serializable
+data class CompleteWorkoutResponse(
+    val message: String,
+    val workoutLog: WorkoutLogResponse,
+    val personalRecords: List<PersonalRecordDetected>,
+    val stats: WorkoutCompletionStats
+)
+
+@Serializable
+data class PersonalRecordDetected(
+    val exerciseName: String,
+    val previousBest: Int?,  // null si es el primer PR
+    val newBest: Int,
+    val improvement: String,  // "+20 reps" o "First record!"
+    val isNewRecord: Boolean
+)
+
+@Serializable
+data class WorkoutCompletionStats(
+    val totalPRsToday: Int,
+    val caloriesBurned: Int,
+    val durationMinutes: Int
+)
+
+data class ExerciseData(
+    val name: String,
+    val sets: Int,
+    val reps: Int
 )
