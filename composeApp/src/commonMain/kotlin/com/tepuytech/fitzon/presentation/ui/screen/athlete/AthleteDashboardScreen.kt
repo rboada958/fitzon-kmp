@@ -672,7 +672,7 @@ fun PersonalRecordCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = record.exercise,
+                        text = record.exerciseName,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White
@@ -699,7 +699,7 @@ fun PersonalRecordCard(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = record.date,
+                    text = record.achievedAt,
                     fontSize = 12.sp,
                     color = textGray
                 )

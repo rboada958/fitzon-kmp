@@ -2,46 +2,27 @@ package com.tepuytech.fitzon.presentation.viewmodel
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.tepuytech.fitzon.domain.model.auth.CustomRegisterRequest
 import com.tepuytech.fitzon.domain.model.auth.LoginResult
-import com.tepuytech.fitzon.domain.usecase.IsUserLoggedInUseCase
-import com.tepuytech.fitzon.domain.usecase.LoginUseCase
-import com.tepuytech.fitzon.domain.usecase.UserRoleUseCase
+import com.tepuytech.fitzon.domain.usecase.RegisterUseCase
 import com.tepuytech.fitzon.presentation.state.AuthUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class LoginViewModel (
-    private val loginUseCase: LoginUseCase,
-    private val isUserLoggedInUseCase: IsUserLoggedInUseCase,
-    private val userRoleUseCase: UserRoleUseCase
+class RegisterViewModel(
+    private val registerUseCase: RegisterUseCase
 ) : ScreenModel {
 
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
-    private val _isLoggedIn = MutableStateFlow(false)
-    val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
 
-    private val _userRole = MutableStateFlow<List<String>>(emptyList())
-    val userRole: StateFlow<List<String>> = _userRole.asStateFlow()
-
-    init {
-        checkIfUserIsLoggedIn()
-    }
-
-    fun checkIfUserIsLoggedIn() {
-        screenModelScope.launch {
-            _isLoggedIn.value = isUserLoggedInUseCase()
-            _userRole.value = userRoleUseCase()
-        }
-    }
-
-    fun login(email: String, password: String) {
+    fun register(customRegisterRequest: CustomRegisterRequest) {
         screenModelScope.launch {
             _uiState.value = AuthUiState.Loading
             try {
-                when (val result = loginUseCase(email, password)) {
+                when (val result = registerUseCase(customRegisterRequest)) {
                     is LoginResult.Success -> {
                         _uiState.value = AuthUiState.Success(result.user)
                     }
@@ -54,4 +35,5 @@ class LoginViewModel (
             }
         }
     }
+
 }

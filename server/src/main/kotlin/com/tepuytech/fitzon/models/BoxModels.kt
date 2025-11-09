@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class BoxDashboardResponse(
+    val boxId: String,
     val boxName: String,
     val boxStats: BoxStatsDTO,
     val todayClasses: List<ClassScheduleItemDTO>,

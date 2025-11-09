@@ -4,6 +4,7 @@ import com.tepuytech.fitzon.data.local.SessionManager
 import com.tepuytech.fitzon.domain.model.box.BoxDashboardResponse
 import com.tepuytech.fitzon.domain.model.box.BoxInfoResponse
 import com.tepuytech.fitzon.domain.model.box.BoxProfileResponse
+import com.tepuytech.fitzon.domain.model.box.BoxesResponse
 import com.tepuytech.fitzon.domain.model.box.UpdateBoxProfileRequest
 import com.tepuytech.fitzon.domain.model.box.UpdateBoxProfileResponse
 import io.ktor.client.HttpClient
@@ -66,5 +67,11 @@ class BoxApi(
         }
 
         return response.body()
+    }
+
+    suspend fun getBoxes() : List<BoxesResponse> {
+        return httpClient.get("api/boxes") {
+            header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
+        }.body()
     }
 }

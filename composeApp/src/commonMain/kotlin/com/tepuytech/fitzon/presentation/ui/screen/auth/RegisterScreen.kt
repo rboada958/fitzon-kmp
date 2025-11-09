@@ -3,13 +3,45 @@ package com.tepuytech.fitzon.presentation.ui.screen.auth
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -22,11 +54,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.tepuytech.fitzon.data.availableBoxes
 import com.tepuytech.fitzon.domain.enums.UserType
-import com.tepuytech.fitzon.getPlatform
+import com.tepuytech.fitzon.domain.model.auth.CustomRegisterRequest
+import com.tepuytech.fitzon.domain.model.box.BoxesResponse
+import com.tepuytech.fitzon.presentation.state.AuthUiState
+import com.tepuytech.fitzon.presentation.state.BoxUiState
+import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
 import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackgroundAlpha
 import com.tepuytech.fitzon.presentation.ui.composable.greenLight
@@ -34,6 +70,8 @@ import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
 import com.tepuytech.fitzon.presentation.ui.screen.athlete.AthleteDashboard
 import com.tepuytech.fitzon.presentation.ui.screen.box.BoxDashboard
+import com.tepuytech.fitzon.presentation.viewmodel.BoxViewModel
+import com.tepuytech.fitzon.presentation.viewmodel.RegisterViewModel
 import fitzon.composeapp.generated.resources.Res
 import fitzon.composeapp.generated.resources.fitzon_logo
 import org.jetbrains.compose.resources.painterResource
@@ -43,27 +81,73 @@ class Register : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val platform = getPlatform()
+        val viewModel = getScreenModel<RegisterViewModel>()
+        val uiState by viewModel.uiState.collectAsState()
+        val boxViewModel = getScreenModel<BoxViewModel>()
+        val boxUiState by boxViewModel.uiState.collectAsState()
 
-        RegisterScreen(
-            onSignUpClick = {
-                if (platform.name.contains("iOS")) {
-                    navigator.replaceAll(BoxDashboard())
-                } else {
-                    navigator.replaceAll(AthleteDashboard())
-                }
-            },
-            onLoginClick = {
-                navigator.replaceAll(Login())
+        LaunchedEffect(Unit) {
+            boxViewModel.getBoxes()
+        }
+
+        when(boxUiState) {
+            is BoxUiState.Loading -> {
+                AthleteDashboardShimmer()
+                return
             }
-        )
+            is BoxUiState.SuccessBoxes -> {
+                val boxState = (boxUiState as BoxUiState.SuccessBoxes).boxes
+                RegisterScreen(
+                    boxState = boxState,
+                    onSignUpClick = {
+                        println(it.toString())
+                        viewModel.register(it)
+                    },
+                    onLoginClick = {
+                        navigator.replaceAll(Login())
+                    }
+                )
+            }
+            is BoxUiState.Error -> {
+                Text("Error: ${(boxUiState as BoxUiState.Error).message}")
+            }
+
+            else -> {}
+        }
+
+        LaunchedEffect(uiState) {
+            if (uiState is AuthUiState.Success) {
+                val userRoles = (uiState as AuthUiState.Success).user?.roles ?: emptyList()
+                if ("ATHLETE" in userRoles) {
+                    navigator.replaceAll(AthleteDashboard())
+                } else {
+                    navigator.replaceAll(BoxDashboard())
+                }
+            }
+        }
+
+        if (uiState is AuthUiState.Loading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = greenLight,
+                    strokeWidth = 4.dp,
+                    modifier = Modifier.size(60.dp)
+                )
+            }
+        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
-    onSignUpClick: () -> Unit,
+    boxState: List<BoxesResponse> = emptyList(),
+    onSignUpClick: (CustomRegisterRequest) -> Unit,
     onLoginClick: () -> Unit
 ) {
     var selectedUserType by remember { mutableStateOf(UserType.PERSONA) }
@@ -79,9 +163,23 @@ fun RegisterScreen(
     var boxPhone by remember { mutableStateOf("") }
 
     var selectedBox by remember { mutableStateOf("") }
+    var selectedBoxId by remember { mutableStateOf("") }
     var expandedBoxDropdown by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
 
+    val isFormAthleteValid =
+        email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty() &&
+                name.isNotEmpty() && selectedBox.isNotEmpty() && password == confirmPassword
 
+    val isFormBoxValid =
+        email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty() && password == confirmPassword
+                && boxName.isNotEmpty() && boxAddress.isNotEmpty() && boxPhone.isNotEmpty()
+
+    if (password.isNotEmpty() && confirmPassword.isNotEmpty() && password != confirmPassword) {
+        errorMessage = "Las contraseñas no coinciden"
+    } else if (errorMessage == "Las contraseñas no coinciden") {
+        errorMessage = ""
+    }
 
     Box(
         modifier = Modifier
@@ -368,17 +466,18 @@ fun RegisterScreen(
                                 onDismissRequest = { expandedBoxDropdown = false },
                                 modifier = Modifier.background(Color(0xFF1B4332))
                             ) {
-                                availableBoxes.forEach { box ->
+                                boxState.forEach { box ->
                                     DropdownMenuItem(
                                         text = {
                                             Text(
-                                                box,
+                                                box.name,
                                                 color = Color.White,
                                                 fontSize = 14.sp
                                             )
                                         },
                                         onClick = {
-                                            selectedBox = box
+                                            selectedBox = box.name
+                                            selectedBoxId = box.id
                                             expandedBoxDropdown = false
                                         },
                                         colors = MenuDefaults.itemColors(
@@ -503,18 +602,72 @@ fun RegisterScreen(
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
                     )
-
+                    if (errorMessage.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "⚠️",
+                                fontSize = 14.sp,
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                            Text(
+                                text = errorMessage,
+                                fontSize = 14.sp,
+                                color = Color(0xFFFF6B6B),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Botón de Registro
                     Button(
-                        onClick = { onSignUpClick() },
+                        onClick = {
+
+                            if (password != confirmPassword) {
+                                return@Button
+                            }
+
+                            if (selectedUserType == UserType.PERSONA) {
+                                if (name.isEmpty() || selectedBox.isEmpty()) {
+                                    return@Button
+                                }
+
+                                val registerRequest = CustomRegisterRequest(
+                                    password = password,
+                                    email = email,
+                                    role = "ATHLETE",
+                                    name = name,
+                                    boxId = selectedBoxId
+                                )
+                                onSignUpClick(registerRequest)
+                            } else {
+                                if (boxName.isEmpty() || boxAddress.isEmpty() || boxPhone.isEmpty()) {
+                                    return@Button
+                                }
+
+                                val registerRequest = CustomRegisterRequest(
+                                    password = password,
+                                    email = email,
+                                    role = "BOX_OWNER",
+                                    boxName = boxName,
+                                    location = boxAddress,
+                                    phone = boxPhone
+                                )
+                                onSignUpClick(registerRequest)
+                            }
+                        },
+                        enabled = if (selectedUserType == UserType.PERSONA) isFormAthleteValid else isFormBoxValid,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = greenPrimary
+                            containerColor = greenPrimary,
+                            disabledContainerColor = Color(0xFF2D6A4F)
                         )
                     ) {
                         Text(
@@ -578,7 +731,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Texto de Footer
+            // Text de Footer
             Text(
                 text = "Al registrarte, aceptas los Términos de Servicio y Política de Privacidad de Fitzon",
                 fontSize = 12.sp,
@@ -595,6 +748,6 @@ fun RegisterScreen(
 fun RegisterScreenPreview() {
     RegisterScreen(
         onSignUpClick = {},
-        onLoginClick = {}
+        onLoginClick = {},
     )
 }

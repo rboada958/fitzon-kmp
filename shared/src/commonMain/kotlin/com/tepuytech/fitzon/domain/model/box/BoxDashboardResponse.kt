@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class BoxDashboardResponse(
+    val boxId: String? = null,
     val boxName: String? = null,
     val boxStats: BoxStats? = null,
     val todayClasses: List<ClassSchedule>? = null,

@@ -4,9 +4,12 @@ import com.tepuytech.fitzon.data.local.SessionManager
 import com.tepuytech.fitzon.data.remote.api.BoxApi
 import com.tepuytech.fitzon.data.remote.api.TokenApi
 import com.tepuytech.fitzon.data.remote.ApiException
+import com.tepuytech.fitzon.domain.model.auth.AuthApiException
+import com.tepuytech.fitzon.domain.model.auth.LoginResponse
 import com.tepuytech.fitzon.domain.model.box.BoxDashboardResponse
 import com.tepuytech.fitzon.domain.model.box.BoxInfoResponse
 import com.tepuytech.fitzon.domain.model.box.BoxProfileResponse
+import com.tepuytech.fitzon.domain.model.box.BoxesResponse
 import com.tepuytech.fitzon.domain.model.box.UpdateBoxProfileRequest
 import com.tepuytech.fitzon.domain.model.box.UpdateBoxProfileResponse
 import com.tepuytech.fitzon.domain.repository.BoxRepository
@@ -149,6 +152,28 @@ class BoxRepositoryImpl(
             throw ApiException("Server error")
         } catch (e: Exception) {
             throw ApiException(e.message ?: "Connection error")
+        }
+    }
+
+    override suspend fun getBoxes(): List<BoxesResponse> {
+        return try {
+            val response = apiService.getBoxes()
+            response
+        }catch (e: ClientRequestException) {
+            try {
+                val errorResponse = e.response.body<LoginResponse>()
+                throw AuthApiException(errorResponse.message ?: "Invalid credentials")
+            } catch (ex: AuthApiException) {
+                throw ex
+            } catch (_: Exception) {
+                throw AuthApiException("Authentication failed")
+            }
+        } catch (_: ServerResponseException) {
+            throw AuthApiException("Server error")
+        } catch (e: AuthApiException) {
+            throw e
+        } catch (e: Exception) {
+            throw AuthApiException(e.message ?: "Connection error")
         }
     }
 }

@@ -6,6 +6,7 @@ import com.tepuytech.fitzon.presentation.viewmodel.ClassViewModel
 import com.tepuytech.fitzon.presentation.viewmodel.CoachViewModel
 import com.tepuytech.fitzon.presentation.viewmodel.LoginViewModel
 import com.tepuytech.fitzon.presentation.viewmodel.MemberViewModel
+import com.tepuytech.fitzon.presentation.viewmodel.RegisterViewModel
 import com.tepuytech.fitzon.presentation.viewmodel.WorkoutViewModel
 import org.koin.dsl.module
 
@@ -16,6 +17,11 @@ val viewModelModule = module {
             loginUseCase = get(),
             isUserLoggedInUseCase = get(),
             userRoleUseCase = get()
+        )
+    }
+    factory<RegisterViewModel> {
+        RegisterViewModel(
+            registerUseCase = get(),
         )
     }
     factory<AthleteViewModel> {
@@ -42,6 +48,7 @@ val viewModelModule = module {
             boxInfoUseCase = get(),
             boxProfileUseCase = get(),
             updateBoxProfileUseCase = get(),
+            boxesUseCase = get(),
             logoutUseCase = get()
         )
     }

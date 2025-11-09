@@ -195,7 +195,7 @@ fun BoxDashboardScreen(
                     .padding(horizontal = 20.dp)
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 AnimatedVisibility(
                     visible = visible,
                     enter = fadeIn() + slideInVertically(
@@ -215,28 +215,66 @@ fun BoxDashboardScreen(
                                 color = Color.White
                             )
 
-                            TextButton(onClick = { /* Ver todas */ }) {
-                                Text(
-                                    "Ver todas",
-                                    color = greenLight,
-                                    fontSize = 14.sp
-                                )
+                            if (!boxState.todayClasses.isNullOrEmpty()) {
+                                TextButton(onClick = { /* Ver todas */ }) {
+                                    Text(
+                                        "Ver todas",
+                                        color = greenLight,
+                                        fontSize = 14.sp
+                                    )
+                                }
                             }
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            boxState.todayClasses?.take(5)?.forEach { classItem ->
-                                ClassCard(
-                                    classSchedule = classItem,
-                                    cardBackground = cardBackground,
-                                    greenPrimary = greenPrimary,
-                                    greenLight = greenLight,
-                                    textGray = textGray
-                                )
+                        if (boxState.todayClasses.isNullOrEmpty()) {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                color = cardBackground
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(32.dp)
+                                ) {
+                                    Text(
+                                        text = "😎",
+                                        fontSize = 48.sp,
+                                        modifier = Modifier.padding(bottom = 12.dp)
+                                    )
+                                    Text(
+                                        text = "Día libre",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "No hay clases programadas para hoy",
+                                        fontSize = 14.sp,
+                                        color = textGray,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        } else {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                boxState.todayClasses?.take(5)?.forEach { classItem ->
+                                    ClassCard(
+                                        classSchedule = classItem,
+                                        cardBackground = cardBackground,
+                                        greenPrimary = greenPrimary,
+                                        greenLight = greenLight,
+                                        textGray = textGray
+                                    )
+                                }
                             }
                         }
                     }
@@ -260,15 +298,51 @@ fun BoxDashboardScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            boxState.topAthletes?.forEach { athlete ->
-                                TopAthleteCard(
-                                    athlete = athlete,
-                                    cardBackground = cardBackground,
-                                    greenLight = greenLight
-                                )
+                        if (boxState.topAthletes.isNullOrEmpty()) {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 20.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                color = cardBackground
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(32.dp)
+                                ) {
+                                    Text(
+                                        text = "🏆",
+                                        fontSize = 48.sp,
+                                        modifier = Modifier.padding(bottom = 12.dp)
+                                    )
+                                    Text(
+                                        text = "Sin destacados aún",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Los atletas con más logros aparecerán aquí",
+                                        fontSize = 14.sp,
+                                        color = textGray,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        } else {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                boxState.topAthletes?.forEach { athlete ->
+                                    TopAthleteCard(
+                                        athlete = athlete,
+                                        cardBackground = cardBackground,
+                                        greenLight = greenLight
+                                    )
+                                }
                             }
                         }
                     }

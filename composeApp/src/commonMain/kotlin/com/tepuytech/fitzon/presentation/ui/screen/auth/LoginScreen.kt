@@ -78,19 +78,18 @@ class Login() : Screen {
 
         LaunchedEffect(isLoggedIn, userRole) {
             if (isLoggedIn) {
-                when (userRole) {
-                    "ATHLETE" -> navigator.replaceAll(AthleteDashboard())
-                    "COACH" -> navigator.replaceAll(AthleteDashboard())
-                    "BOX_OWNER" -> navigator.replaceAll(BoxDashboard())
-                    else -> {}
+                if ("ATHLETE" in userRole) {
+                    navigator.replaceAll(AthleteDashboard())
+                } else {
+                    navigator.replaceAll(BoxDashboard())
                 }
             }
         }
 
         LaunchedEffect(uiState) {
             if (uiState is AuthUiState.Success) {
-                val userRole = (uiState as AuthUiState.Success).user?.role
-                if (userRole == "ATHLETE") {
+                val userRoles = (uiState as AuthUiState.Success).user?.roles ?: emptyList()
+                if ("ATHLETE" in userRoles) {
                     navigator.replaceAll(AthleteDashboard())
                 } else {
                     navigator.replaceAll(BoxDashboard())

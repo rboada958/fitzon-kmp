@@ -7,6 +7,7 @@ import com.tepuytech.fitzon.domain.model.box.UpdateBoxProfileRequest
 import com.tepuytech.fitzon.domain.usecase.BoxDashboardUseCase
 import com.tepuytech.fitzon.domain.usecase.BoxInfoUseCase
 import com.tepuytech.fitzon.domain.usecase.BoxProfileUseCase
+import com.tepuytech.fitzon.domain.usecase.BoxesUseCase
 import com.tepuytech.fitzon.domain.usecase.LogoutUseCase
 import com.tepuytech.fitzon.domain.usecase.UpdateBoxProfileUseCase
 import com.tepuytech.fitzon.presentation.state.BoxUiState
@@ -21,6 +22,7 @@ class BoxViewModel(
     private val boxInfoUseCase: BoxInfoUseCase,
     private val boxProfileUseCase: BoxProfileUseCase,
     private val updateBoxProfileUseCase: UpdateBoxProfileUseCase,
+    private val boxesUseCase: BoxesUseCase,
     private val logoutUseCase: LogoutUseCase
 ) : ScreenModel {
 
@@ -97,6 +99,26 @@ class BoxViewModel(
                 when (val result = updateBoxProfileUseCase(updateBoxProfileRequest)) {
                     is BoxDashboardResult.SuccessUpdateBoxProfile -> {
                         _uiState.value  = BoxUiState.SuccessUpdateBoxProfile(result.updateBoxProfile)
+                    }
+
+                    is BoxDashboardResult.Error -> {
+                        _uiState.value = BoxUiState.Error(result.message)
+                    }
+                    else -> {}
+                }
+            } catch (e: Exception) {
+                _uiState.value = BoxUiState.Error(e.message ?: "Unknown error")
+            }
+        }
+    }
+
+    fun getBoxes() {
+        screenModelScope.launch {
+            _uiState.value = BoxUiState.Loading
+            try {
+                when (val result = boxesUseCase()) {
+                    is BoxDashboardResult.SuccessBoxes -> {
+                        _uiState.value = BoxUiState.SuccessBoxes(result.boxes)
                     }
 
                     is BoxDashboardResult.Error -> {
