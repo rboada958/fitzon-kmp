@@ -85,10 +85,13 @@ class WorkoutOfTheDay(val workout: WorkoutResponse?) : Screen {
         val uiState by viewModel.uiState.collectAsState()
 
         var showCompletionDialog by remember { mutableStateOf(false) }
+        var message by remember { mutableStateOf("") }
+
 
         LaunchedEffect(uiState) {
             when (uiState) {
                 is WorkoutUiState.SuccessCompleteWorkout -> {
+                    message = (uiState as WorkoutUiState.SuccessCompleteWorkout).completeWorkoutResponse.message
                     showCompletionDialog = true
                 }
                 else -> {}
@@ -173,7 +176,7 @@ class WorkoutOfTheDay(val workout: WorkoutResponse?) : Screen {
                 },
                 text = {
                     Text(
-                        text = "Has completado el workout del día. ¡Sigue así!",
+                        text = message,
                         fontSize = 16.sp
                     )
                 },

@@ -69,6 +69,7 @@ import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
 import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
+import com.tepuytech.fitzon.presentation.ui.composable.mapDayToSpanish
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
 import com.tepuytech.fitzon.presentation.viewmodel.ClassViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -340,33 +341,60 @@ fun ManageClassesScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     val groupedByDay = filteredClasses.groupBy { it.dayOfWeek }
-
-                    groupedByDay.forEach { (day, classesByDay) ->
+                    if (filteredClasses.isEmpty()) {
                         item {
-                            Column {
-                                Text(
-                                    text = day,
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                    modifier = Modifier.padding(bottom = 12.dp)
-                                )
-
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 60.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Column(
-                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.padding(20.dp)
                                 ) {
-                                    classesByDay.forEach { classSession ->
-                                        ClassCard(
-                                            classSession = classSession,
-                                            cardBackground = cardBackground,
-                                            greenPrimary = greenPrimary,
-                                            greenLight = greenLight,
-                                            textGray = textGray,
-                                            onClick = {
-                                                selectedClass = classSession
-                                                showClassDetails = true
-                                            }
-                                        )
+                                    Text(
+                                        text = "😶",
+                                        fontSize = 48.sp,
+                                        modifier = Modifier.padding(bottom = 12.dp)
+                                    )
+                                    Text(
+                                        text = "No hay clases disponibles ",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        groupedByDay.forEach { (day, classesByDay) ->
+                            item {
+                                Column {
+                                    Text(
+                                        text = mapDayToSpanish(day),
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(bottom = 12.dp)
+                                    )
+
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        classesByDay.forEach { classSession ->
+                                            ClassCard(
+                                                classSession = classSession,
+                                                cardBackground = cardBackground,
+                                                greenPrimary = greenPrimary,
+                                                greenLight = greenLight,
+                                                textGray = textGray,
+                                                onClick = {
+                                                    selectedClass = classSession
+                                                    showClassDetails = true
+                                                }
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -414,7 +442,8 @@ fun ManageClassesScreen(
                 Column(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    ClassDetailRow("📅", "Día", selectedClass!!.dayOfWeek)
+
+                    ClassDetailRow("📅", "Día", mapDayToSpanish(selectedClass!!.dayOfWeek))
                     Spacer(modifier = Modifier.height(12.dp))
                     ClassDetailRow("🕐", "Hora", selectedClass!!.time)
                     Spacer(modifier = Modifier.height(12.dp))

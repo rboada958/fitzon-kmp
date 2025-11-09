@@ -4,6 +4,7 @@ import com.russhwolf.settings.ExperimentalSettingsApi
 import com.russhwolf.settings.ObservableSettings
 import com.russhwolf.settings.coroutines.FlowSettings
 import com.russhwolf.settings.coroutines.toFlowSettings
+import kotlinx.serialization.json.Json
 
 class SessionManager(settings: ObservableSettings) {
 
@@ -38,7 +39,7 @@ class SessionManager(settings: ObservableSettings) {
         userId: String?,
         email: String?,
         name: String?,
-        role: String?,
+        role: List<String>,
         avatar: String?
     ) {
         flowSettings.putString(ACCESS_TOKEN_KEY, accessToken)
@@ -47,7 +48,10 @@ class SessionManager(settings: ObservableSettings) {
         userId?.let { flowSettings.putString(USER_ID_KEY, it) }
         email?.let { flowSettings.putString(USER_EMAIL_KEY, it) }
         name?.let { flowSettings.putString(USER_NAME_KEY, it) }
-        role?.let { flowSettings.putString(USER_ROLE_KEY, it) }
+        if (role.isNotEmpty()) {
+            val rolesJson = Json.encodeToString(role)
+            flowSettings.putString(USER_ROLE_KEY, rolesJson)
+        }
         avatar?.let { flowSettings.putString(USER_AVATAR_KEY, it) }
     }
 
@@ -72,8 +76,13 @@ class SessionManager(settings: ObservableSettings) {
     }
 
     @OptIn(ExperimentalSettingsApi::class)
-    suspend fun userRoleSync(): String {
-        return flowSettings.getString(USER_ROLE_KEY, defaultValue = "")
+    suspend fun userRoleSync(): List<String> {
+        val rolesJson = flowSettings.getStringOrNull(USER_ROLE_KEY)
+        return if (rolesJson != null) {
+            Json.decodeFromString(rolesJson)
+        } else {
+            emptyList()
+        }
     }
 
     @OptIn(ExperimentalSettingsApi::class)

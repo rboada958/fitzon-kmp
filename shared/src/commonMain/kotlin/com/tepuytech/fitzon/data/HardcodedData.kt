@@ -6,16 +6,6 @@ import com.tepuytech.fitzon.domain.enums.NotificationType
 import com.tepuytech.fitzon.domain.model.BoxNotification
 import com.tepuytech.fitzon.domain.model.Notification
 
-/*RegisterScreen*/
-
-val availableBoxes = listOf(
-    "Soldier Box",
-    "Iron Box",
-    "Beast Mode CrossFit",
-    "Elite Athletics",
-    "Warrior Box",
-)
-
 /*NotificationCenter*/
 
 val notifications = listOf(

@@ -72,6 +72,7 @@ import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
 import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
+import com.tepuytech.fitzon.presentation.ui.composable.mapDayToSpanish
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
 import com.tepuytech.fitzon.presentation.viewmodel.ClassViewModel
 import com.tepuytech.fitzon.presentation.viewmodel.CoachViewModel
@@ -97,6 +98,12 @@ class CreateClass(val boxId: String) : Screen {
         var coachName by remember { mutableStateOf("") }
         var workoutName by remember { mutableStateOf("") }
         var shouldClearFields by remember { mutableStateOf(false) }
+
+        val levelsSpanish = mapOf(
+            "BEGINNER" to "Principiante",
+            "INTERMEDIATE" to "Intermedio",
+            "ADVANCED" to "Avanzado"
+        )
 
         LaunchedEffect(Unit) {
             coachViewModel.getCoaches()
@@ -195,11 +202,11 @@ class CreateClass(val boxId: String) : Screen {
                             ) {
                                 SuccessDetailRow("Clase:", data.name)
                                 SuccessDetailRow("Descripción:", data.description)
-                                SuccessDetailRow("Día:", data.dayOfWeek)
+                                SuccessDetailRow("Día:", mapDayToSpanish(data.dayOfWeek))
                                 SuccessDetailRow("Inicio:", data.startTime)
                                 SuccessDetailRow("Fin:", data.endTime)
                                 SuccessDetailRow("Coach:", coachName)
-                                SuccessDetailRow("Nivel:", data.level)
+                                SuccessDetailRow("Nivel:", levelsSpanish[data.level]!!)
                                 SuccessDetailRow("Workout:", workoutName)
                                 SuccessDetailRow("Capacidad:", data.maxCapacity.toString())
                             }

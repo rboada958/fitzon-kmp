@@ -17,16 +17,22 @@
       <w>almacenadas</w>
       <w>altura</w>
       <w>amenidades</w>
+      <w>aparecerán</w>
+      <w>aplicados</w>
       <w>aprobar</w>
+      <w>aquí</w>
       <w>asignado</w>
       <w>asignar</w>
       <w>atleta</w>
       <w>atletas</w>
       <w>avanzado</w>
       <w>años</w>
+      <w>botón</w>
       <w>buen</w>
       <w>bueno</w>
       <w>buscar</w>
+      <w>búsqueda</w>
+      <w>calle</w>
       <w>calorías</w>
       <w>cambiar</w>
       <w>cancelada</w>
@@ -34,12 +40,17 @@
       <w>capacidad</w>
       <w>centenario</w>
       <w>cerrar</w>
+      <w>certificaciones</w>
       <w>clase</w>
       <w>clases</w>
+      <w>coincidan</w>
+      <w>coinciden</w>
+      <w>comienza</w>
       <w>completa</w>
       <w>completado</w>
       <w>completados</w>
       <w>completando</w>
+      <w>comunidad</w>
       <w>configuración</w>
       <w>confirmar</w>
       <w>consecutivo</w>
@@ -49,6 +60,9 @@
       <w>contar</w>
       <w>continuar</w>
       <w>contraseña</w>
+      <w>contraseñas</w>
+      <w>contratando</w>
+      <w>contratar</w>
       <w>convertir</w>
       <w>correctamente</w>
       <w>corta</w>
@@ -84,6 +98,8 @@
       <w>entrenando</w>
       <w>enviar</w>
       <w>esfuerzo</w>
+      <w>especializaciones</w>
+      <w>específicos</w>
       <w>estadísticas</w>
       <w>estás</w>
       <w>excelente</w>
@@ -92,6 +108,7 @@
       <w>experiencia</w>
       <w>fecha</w>
       <w>felicidades</w>
+      <w>filtros</w>
       <w>fitzon</w>
       <w>formatear</w>
       <w>fuego</w>
@@ -115,6 +132,7 @@
       <w>intermedio</w>
       <w>inválido</w>
       <w>jueves</w>
+      <w>licencia</w>
       <w>lista</w>
       <w>listar</w>
       <w>llena</w>
@@ -145,10 +163,12 @@
       <w>perfil</w>
       <w>personales</w>
       <w>pertenece</w>
+      <w>perteneces</w>
       <w>política</w>
       <w>primera</w>
       <w>principiante</w>
       <w>privacidad</w>
+      <w>programadas</w>
       <w>programados</w>
       <w>progreso</w>
       <w>promedio</w>
@@ -156,15 +176,20 @@
       <w>racha</w>
       <w>rastrea</w>
       <w>reactivar</w>
+      <w>reciente</w>
       <w>recordar</w>
       <w>registra</w>
+      <w>registrarse</w>
+      <w>registrarte</w>
       <w>registro</w>
       <w>regístrate</w>
       <w>reintentar</w>
       <w>retornar</w>
+      <w>rápidas</w>
       <w>sección</w>
       <w>seguidos</w>
       <w>seguro</w>
+      <w>según</w>
       <w>selecciona</w>
       <w>seleccionado</w>
       <w>seleccionar</w>
@@ -178,6 +203,7 @@
       <w>sábado</w>
       <w>teléfono</w>
       <w>tienes</w>
+      <w>tipo</w>
       <w>todas</w>
       <w>totales</w>
       <w>trabajo</w>
@@ -192,6 +218,7 @@
       <w>viernes</w>
       <w>volver</w>
       <w>válido</w>
+      <w>únete</w>
     </words>
   </dictionary>
 </component>

@@ -188,6 +188,7 @@ class BoxRepository {
             }
 
             BoxDashboardResponse(
+                boxId = boxId.toString(),
                 boxName = box[Boxes.name],
                 boxStats = boxStats,
                 todayClasses = todayClasses,

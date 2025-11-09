@@ -281,18 +281,57 @@ fun ManageCoachesScreen(
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(filteredCoaches) { coach ->
-                        CoachCard(
-                            coach = coach,
-                            cardBackground = cardBackground,
-                            greenPrimary = greenPrimary,
-                            greenLight = greenLight,
-                            textGray = textGray,
-                            onClick = {
-                                selectedCoach = coach
-                                showCoachDetails = true
+                    if (filteredCoaches.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 60.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.padding(20.dp)
+                                ) {
+                                    Text(
+                                        text = "👨‍🏫",
+                                        fontSize = 48.sp,
+                                        modifier = Modifier.padding(bottom = 12.dp)
+                                    )
+                                    Text(
+                                        text = "Sin coaches",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = if (coaches.isEmpty()) {
+                                            "Comienza contratando tu primer coach"
+                                        } else {
+                                            "No hay coaches con los filtros aplicados"
+                                        },
+                                        fontSize = 14.sp,
+                                        color = textGray,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    )
+                                }
                             }
-                        )
+                        }
+                    } else {
+                        items(filteredCoaches) { coach ->
+                            CoachCard(
+                                coach = coach,
+                                cardBackground = cardBackground,
+                                greenPrimary = greenPrimary,
+                                greenLight = greenLight,
+                                textGray = textGray,
+                                onClick = {
+                                    selectedCoach = coach
+                                    showCoachDetails = true
+                                }
+                            )
+                        }
                     }
 
                     item {

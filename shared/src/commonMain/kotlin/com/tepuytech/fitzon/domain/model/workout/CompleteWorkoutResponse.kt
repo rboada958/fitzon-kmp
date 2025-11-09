@@ -4,11 +4,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CompleteWorkoutResponse(
-    val id: String,
-    val athleteId: String,
-    val workoutId: String,
-    val completedAt: String,
-    val caloriesBurned: Int?,
-    val durationMinutes: Int?,
-    val notes: String?
+    val message: String,
+    val workoutLog: WorkoutLog,
+    val personalRecords: List<PersonalRecordDetected>,
+    val stats: Stats,
 )
