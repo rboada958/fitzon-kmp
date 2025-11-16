@@ -7,9 +7,9 @@ import com.tepuytech.fitzon.domain.repository.WorkoutRepository
 class WorkoutOfTheDayUseCase(
     private val workoutRepository: WorkoutRepository
 ) {
-    suspend operator fun invoke(): WorkoutResult {
+    suspend operator fun invoke(workoutId: String): WorkoutResult {
         return try {
-            val response = workoutRepository.workoutOfTheDay()
+            val response = workoutRepository.workoutOfTheDay(workoutId)
             WorkoutResult.Success(response)
         } catch (e: ApiException) {
             WorkoutResult.Error(e.errorMessage)
