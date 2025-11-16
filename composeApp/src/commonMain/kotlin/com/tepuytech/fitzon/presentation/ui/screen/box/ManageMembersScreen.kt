@@ -105,7 +105,8 @@ class ManageMembers() : Screen {
 @Composable
 fun ManageMembersScreen(
     membersState: List<MemberResponse> = emptyList(),
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    onPromoteClick: (String) -> Unit = {}
 ) {
     var members by remember {
         mutableStateOf(
@@ -270,20 +271,54 @@ fun ManageMembersScreen(
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(filteredMembers) { member ->
-                        MemberCard(
-                            member = member,
-                            cardBackground = cardBackground,
-                            greenPrimary = greenPrimary,
-                            greenLight = greenLight,
-                            textGray = textGray,
-                            onClick = {
-                                selectedMember = member
-                                showMemberDetails = true
+                    if (filteredMembers.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 60.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.padding(20.dp)
+                                ) {
+                                    Text(
+                                        text = "👨‍🏫",
+                                        fontSize = 48.sp,
+                                        modifier = Modifier.padding(bottom = 12.dp)
+                                    )
+                                    Text(
+                                        text = "Sin miembros",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "No hay miembros con los filtros aplicados",
+                                        fontSize = 14.sp,
+                                        color = textGray,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    )
+                                }
                             }
-                        )
+                        }
+                    }else {
+                        items(filteredMembers) { member ->
+                            MemberCard(
+                                member = member,
+                                cardBackground = cardBackground,
+                                greenPrimary = greenPrimary,
+                                greenLight = greenLight,
+                                textGray = textGray,
+                                onClick = {
+                                    selectedMember = member
+                                    showMemberDetails = true
+                                }
+                            )
+                        }
                     }
-
                     item {
                         Spacer(modifier = Modifier.height(80.dp))
                     }
@@ -360,6 +395,19 @@ fun ManageMembersScreen(
                             ) {
                                 Text("💰 Recordar Pago")
                             }
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                onPromoteClick(selectedMember!!.id)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(0xFFFF6B6B)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("🗑️ Promover a coach")
                         }
 
                         OutlinedButton(

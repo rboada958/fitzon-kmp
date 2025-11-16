@@ -2,7 +2,13 @@ package com.tepuytech.fitzon.data
 
 import com.tepuytech.fitzon.models.*
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.TextStyle
+import java.util.Locale
 import java.util.UUID
 
 class ClassRepository {
@@ -85,13 +91,8 @@ class ClassRepository {
         try {
             val uuid = UUID.fromString(boxId)
 
-            ClassSchedules.selectAll()
-                .where {
-                    (ClassSchedules.boxId eq uuid) and
-                            (ClassSchedules.isActive eq true)
-                }
-                .orderBy(ClassSchedules.dayOfWeek)
-                .orderBy(ClassSchedules.startTime)
+            val classes = ClassSchedules.selectAll()
+                .where { ClassSchedules.boxId eq uuid }
                 .map { schedule : ResultRow ->
                     val coachId = schedule[ClassSchedules.coachId]
                     val coach = Coaches.innerJoin(Users)
@@ -118,8 +119,30 @@ class ClassRepository {
                         isNow = false
                     )
                 }
+
+            // ============================================
+            // NUEVO: Order correctamente en Kotlin
+            // ============================================
+            val dayOrder = mapOf(
+                "MONDAY" to 1,
+                "TUESDAY" to 2,
+                "WEDNESDAY" to 3,
+                "THURSDAY" to 4,
+                "FRIDAY" to 5,
+                "SATURDAY" to 6,
+                "SUNDAY" to 7
+            )
+
+            classes.sortedWith(
+                compareBy(
+                    { dayOrder[it.dayOfWeek] ?: 8 },  // Order por día
+                    { parseTime(it.time) }  // Ahora por hora
+                )
+            )
+
         } catch (e: Exception) {
             println("Error in getClassesByBox: ${e.message}")
+            e.printStackTrace()
             emptyList()
         }
     }
@@ -145,6 +168,370 @@ class ClassRepository {
             } > 0
         } catch (_: Exception) {
             false
+        }
+    }
+
+    fun enrollInClass(userId: String, classId: String): EnrollmentResponse? = transaction {
+        try {
+            val userUuid = UUID.fromString(userId)
+            val classUuid = UUID.fromString(classId)
+
+            // Obtener el athleteId
+            val athlete = Athletes
+                .selectAll()
+                .where { Athletes.userId eq userUuid }
+                .singleOrNull() ?: return@transaction null
+
+            val athleteId = athlete[Athletes.id]
+
+            // Verificar que la clase existe
+            val classRow = ClassSchedules
+                .selectAll()
+                .where { ClassSchedules.id eq classUuid }
+                .singleOrNull() ?: return@transaction null
+
+            // Verificar que no está llena
+            val currentEnrollment = classRow[ClassSchedules.currentEnrollment]
+            val maxCapacity = classRow[ClassSchedules.maxCapacity]
+
+            if (currentEnrollment >= maxCapacity) {
+                return@transaction null  // Clase llena
+            }
+
+            // Verificar que no está ya inscrito
+            val alreadyEnrolled = ClassEnrollments
+                .selectAll()
+                .where {
+                    (ClassEnrollments.classId eq classUuid) and
+                            (ClassEnrollments.athleteId eq athleteId)
+                }
+                .count() > 0
+
+            if (alreadyEnrolled) {
+                return@transaction null  // Ya inscrito
+            }
+
+            // Crear inscription
+            val enrollmentId = UUID.randomUUID()
+
+            ClassEnrollments.insert {
+                it[ClassEnrollments.id] = enrollmentId
+                it[ClassEnrollments.classId] = classUuid
+                it[ClassEnrollments.athleteId] = athleteId
+            }
+
+            // Incremental currentEnrollment
+            ClassSchedules.update({ ClassSchedules.id eq classUuid }) {
+                it[ClassSchedules.currentEnrollment] = currentEnrollment + 1
+            }
+
+            // Obtener info del coach
+            val coach = Coaches
+                .innerJoin(Users)
+                .selectAll()
+                .where { Coaches.id eq classRow[ClassSchedules.coachId] }
+                .singleOrNull()
+
+            val coachName = coach?.get(Users.name) ?: "Coach"
+
+            EnrollmentResponse(
+                message = "Enrolled successfully",
+                enrollment = EnrollmentDTO(
+                    id = enrollmentId.toString(),
+                    classId = classId,
+                    athleteId = athleteId.toString(),
+                    enrolledAt = LocalDateTime.now().toString()
+                ),
+                classInfo = ClassEnrollmentInfo(
+                    id = classId,
+                    name = classRow[ClassSchedules.name],
+                    dayOfWeek = classRow[ClassSchedules.dayOfWeek],
+                    startTime = classRow[ClassSchedules.startTime],
+                    endTime = classRow[ClassSchedules.endTime],
+                    coachName = coachName,
+                    currentEnrollment = currentEnrollment + 1,
+                    maxCapacity = maxCapacity
+                )
+            )
+
+        } catch (e: Exception) {
+            println("Error enrolling in classInfo: ${e.message}")
+            e.printStackTrace()
+            null
+        }
+    }
+
+    fun cancelEnrollment(userId: String, classId: String): Boolean = transaction {
+        try {
+            val userUuid = UUID.fromString(userId)
+            val classUuid = UUID.fromString(classId)
+
+            // Obtener el athleteId
+            val athlete = Athletes
+                .selectAll()
+                .where { Athletes.userId eq userUuid }
+                .singleOrNull() ?: return@transaction false
+
+            val athleteId = athlete[Athletes.id]
+
+            // Verificar que está inscrito
+            val enrollment = ClassEnrollments
+                .selectAll()
+                .where {
+                    (ClassEnrollments.classId eq classUuid) and
+                            (ClassEnrollments.athleteId eq athleteId)
+                }
+                .singleOrNull() ?: return@transaction false
+
+            // Eliminar inscription
+            ClassEnrollments.deleteWhere {
+                (ClassEnrollments.classId eq classUuid) and
+                        (ClassEnrollments.athleteId eq athleteId)
+            }
+
+            // Decrement currentEnrollment
+            ClassSchedules.update({ ClassSchedules.id eq classUuid }) {
+                with(SqlExpressionBuilder) {
+                    it[currentEnrollment] = currentEnrollment - 1
+                }
+            }
+
+            true
+
+        } catch (e: Exception) {
+            println("Error cancelling enrollment: ${e.message}")
+            e.printStackTrace()
+            false
+        }
+    }
+
+    fun getMyClasses(userId: String, filter: String = "all"): MyClassesResponse? = transaction {
+        try {
+            val userUuid = UUID.fromString(userId)
+
+            // Obtener athleteId
+            val athlete = Athletes
+                .selectAll()
+                .where { Athletes.userId eq userUuid }
+                .singleOrNull() ?: return@transaction null
+
+            val athleteId = athlete[Athletes.id]
+
+            // Obtener todas las clases inscritas
+            val enrolledClasses = (ClassEnrollments innerJoin ClassSchedules)
+                .innerJoin(Coaches)
+                .innerJoin(Users)
+                .selectAll()
+                .where {
+                    (ClassEnrollments.athleteId eq athleteId) and
+                            (Coaches.id eq ClassSchedules.coachId) and
+                            (Users.id eq Coaches.userId)
+                }
+                .map { row ->
+                    val classId = row[ClassSchedules.id].toString()
+                    val dayOfWeek = row[ClassSchedules.dayOfWeek]
+                    val workoutId = row[ClassSchedules.workoutId]
+
+                    // Obtener workout si existe
+                    val workout = if (workoutId != null) {
+                        Workouts
+                            .selectAll()
+                            .where { Workouts.id eq workoutId }
+                            .singleOrNull()
+                            ?.let { w ->
+                                // Verificar si ya completó este workout hoy
+                                val isCompleted = WorkoutLogs
+                                    .selectAll()
+                                    .where {
+                                        (WorkoutLogs.athleteId eq athleteId) and
+                                                (WorkoutLogs.workoutId eq workoutId) and
+                                                (WorkoutLogs.completedAt greaterEq LocalDateTime.now().toLocalDate().atStartOfDay())
+                                    }
+                                    .count() > 0
+
+                                WorkoutPreviewDTO(
+                                    id = w[Workouts.id].toString(),
+                                    title = w[Workouts.title],
+                                    difficulty = w[Workouts.difficulty],
+                                    duration = w[Workouts.duration],
+                                    isCompleted = isCompleted
+                                )
+                            }
+                    } else null
+
+                    Triple(
+                        row,
+                        dayOfWeek,
+                        workout
+                    )
+                }
+
+            // Clases de hoy
+            val todayDayOfWeek = LocalDate.now().dayOfWeek.getDisplayName(TextStyle.FULL, Locale.ENGLISH).uppercase()
+            val todayClasses = enrolledClasses
+                .filter { it.second == todayDayOfWeek }
+                .map { (row, _, workout) ->
+                    TodayClassDTO(
+                        classId = row[ClassSchedules.id].toString(),
+                        className = row[ClassSchedules.name],
+                        startTime = row[ClassSchedules.startTime],
+                        endTime = row[ClassSchedules.endTime],
+                        coachName = row[Users.name] ?: "Coach",
+                        workout = workout,
+                        status = "upcoming"  // Puedes calcular esto con la hora
+                    )
+                }
+
+            // Próximas clases (siguiente semana)
+            val upcomingClasses = enrolledClasses
+                .filter { it.second != todayDayOfWeek }
+                .take(5)
+                .map { (row, dayOfWeek, workout) ->
+                    UpcomingClassDTO(
+                        classId = row[ClassSchedules.id].toString(),
+                        className = row[ClassSchedules.name],
+                        dayOfWeek = dayOfWeek,
+                        date = formatUpcomingDate(dayOfWeek),
+                        startTime = row[ClassSchedules.startTime],
+                        coachName = row[Users.name] ?: "Coach",
+                        hasWorkout = workout != null
+                    )
+                }
+
+            MyClassesResponse(
+                today = todayClasses,
+                thisWeek = upcomingClasses.take(3),
+                upcoming = upcomingClasses
+            )
+
+        } catch (e: Exception) {
+            println("Error getting my classes: ${e.message}")
+            e.printStackTrace()
+            null
+        }
+    }
+
+    fun getAvailableClasses(userId: String, dayOfWeek: String? = null): AvailableClassesResponse? = transaction {
+        try {
+            val userUuid = UUID.fromString(userId)
+
+            // Obtener athleteId y boxId
+            val athlete = Athletes
+                .selectAll()
+                .where { Athletes.userId eq userUuid }
+                .singleOrNull() ?: return@transaction null
+
+            val athleteId = athlete[Athletes.id]
+            val boxId = athlete[Athletes.boxId] ?: return@transaction null
+
+            // Obtener todas las clases del box
+            var query = (ClassSchedules innerJoin Coaches innerJoin Users)
+                .selectAll()
+                .where {
+                    (ClassSchedules.boxId eq boxId) and
+                            (Coaches.id eq ClassSchedules.coachId) and
+                            (Users.id eq Coaches.userId)
+                }
+
+            // Filtrar por día si se proporciona
+            if (dayOfWeek != null) {
+                query = query.andWhere { ClassSchedules.dayOfWeek eq dayOfWeek.uppercase() }
+            }
+
+            val classes = query.map { row ->
+                val classId = row[ClassSchedules.id]
+
+                // Verificar si el atleta está inscrito
+                val isEnrolled = ClassEnrollments
+                    .selectAll()
+                    .where {
+                        (ClassEnrollments.classId eq classId) and
+                                (ClassEnrollments.athleteId eq athleteId)
+                    }
+                    .count() > 0
+
+                // Obtener workout si existe
+                val workoutId = row[ClassSchedules.workoutId]
+                val workoutTitle = if (workoutId != null) {
+                    Workouts
+                        .selectAll()
+                        .where { Workouts.id eq workoutId }
+                        .singleOrNull()
+                        ?.get(Workouts.title)
+                } else null
+
+                val currentEnrollment = row[ClassSchedules.currentEnrollment]
+                val maxCapacity = row[ClassSchedules.maxCapacity]
+
+                AvailableClassDTO(
+                    id = classId.toString(),
+                    name = row[ClassSchedules.name],
+                    dayOfWeek = row[ClassSchedules.dayOfWeek],
+                    startTime = row[ClassSchedules.startTime],
+                    endTime = row[ClassSchedules.endTime],
+                    coachName = row[Users.name] ?: "Coach",
+                    maxCapacity = maxCapacity,
+                    currentEnrollment = currentEnrollment,
+                    spotsLeft = maxCapacity - currentEnrollment,
+                    isEnrolled = isEnrolled,
+                    workoutId = workoutId?.toString(),
+                    workoutTitle = workoutTitle,
+                    level = row[ClassSchedules.level]
+                )
+            }
+
+            val dayOrder = mapOf(
+                "MONDAY" to 1,
+                "TUESDAY" to 2,
+                "WEDNESDAY" to 3,
+                "THURSDAY" to 4,
+                "FRIDAY" to 5,
+                "SATURDAY" to 6,
+                "SUNDAY" to 7
+            )
+
+            val sortedClasses = classes.sortedWith(
+                compareBy(
+                    { dayOrder[it.dayOfWeek] ?: 8 },  // Order por día
+                    { parseTime(it.startTime) }  // Por hora
+                )
+            )
+
+            AvailableClassesResponse(classes = sortedClasses)
+
+        } catch (e: Exception) {
+            println("Error getting available classes: ${e.message}")
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private fun formatUpcomingDate(dayOfWeek: String): String {
+        val today = LocalDate.now()
+        val targetDay = DayOfWeek.valueOf(dayOfWeek)
+        return when (val daysUntil = (targetDay.value - today.dayOfWeek.value + 7) % 7) {
+            0 -> "Hoy"
+            1 -> "Mañana"
+            else -> {
+                val targetDate = today.plusDays(daysUntil.toLong())
+                "${targetDay.getDisplayName(TextStyle.FULL, Locale("es"))} ${targetDate.dayOfMonth} ${targetDate.month.getDisplayName(TextStyle.SHORT, Locale("es"))}"
+            }
+        }
+    }
+
+    private fun parseTime(time: String): Int {
+        return try {
+            val parts = time.split(":")
+            var hours = parts[0].toInt()
+            val minutes = parts[1].take(2).toInt()
+            val isPM = time.contains("PM", ignoreCase = true)
+
+            if (isPM && hours != 12) hours += 12
+            if (!isPM && hours == 12) hours = 0
+
+            hours * 60 + minutes
+        } catch (e: Exception) {
+            0
         }
     }
 }

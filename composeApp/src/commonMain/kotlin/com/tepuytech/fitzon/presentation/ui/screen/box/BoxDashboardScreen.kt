@@ -84,6 +84,7 @@ class BoxDashboard : Screen {
                 val sortedClasses = boxState.todayClasses?.sortedBy { parseTime(it.time) } ?: emptyList()
                 BoxDashboardScreen(
                     boxState = boxState.copy(todayClasses = sortedClasses),
+                    onSeeAllClick = { boxState.boxId?.let {navigator.push(ManageClasses(it)) }},
                     onNotificationClick = { navigator.push(NotificationCenterBox()) },
                     onProfileClick = { navigator.push(BoxProfile()) }
                 )
@@ -100,6 +101,7 @@ class BoxDashboard : Screen {
 @Composable
 fun BoxDashboardScreen(
     boxState: BoxDashboardResponse = BoxDashboardResponse(),
+    onSeeAllClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
     onProfileClick: () -> Unit = {}
 ) {
@@ -216,7 +218,7 @@ fun BoxDashboardScreen(
                             )
 
                             if (!boxState.todayClasses.isNullOrEmpty()) {
-                                TextButton(onClick = { /* Ver todas */ }) {
+                                TextButton(onClick = { onSeeAllClick() }) {
                                     Text(
                                         "Ver todas",
                                         color = greenLight,

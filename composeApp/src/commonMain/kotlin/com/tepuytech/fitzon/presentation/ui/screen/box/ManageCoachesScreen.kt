@@ -306,11 +306,7 @@ fun ManageCoachesScreen(
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = if (coaches.isEmpty()) {
-                                            "Comienza contratando tu primer coach"
-                                        } else {
-                                            "No hay coaches con los filtros aplicados"
-                                        },
+                                        text = "No hay coaches con los filtros aplicados",
                                         fontSize = 14.sp,
                                         color = textGray,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center

@@ -19,7 +19,7 @@ fun Route.classRoutes(repo: ClassRepository) {
     route("/classes") {
         authenticate("auth-jwt") {
 
-            // 📍 POST /api/classes - Crear class
+            // 📍 POST /api/classes - Crear classInfo
             post {
                 val principal = call.principal<JWTPrincipal>()
                 val userId = principal?.payload?.getClaim("id")?.asString()
@@ -45,17 +45,18 @@ fun Route.classRoutes(repo: ClassRepository) {
                     request.endTime,
                     request.dayOfWeek,
                     request.maxCapacity,
-                    request.level
+                    request.level,
+                    request.workoutId
                 )
 
                 if (classSchedule == null) {
-                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Failed to create class"))
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Failed to create classInfo"))
                 } else {
                     call.respond(HttpStatusCode.Created, classSchedule)
                 }
             }
 
-            // 📍 GET /api/classes/box/{boxId} - Listar class del box
+            // 📍 GET /api/classes/box/{boxId} - Listar classInfo del box
             get("/box/{boxId}") {
                 val boxId = call.parameters["boxId"]
 
@@ -68,7 +69,7 @@ fun Route.classRoutes(repo: ClassRepository) {
                 call.respond(HttpStatusCode.OK, classes)
             }
 
-            // 📍 DELETE /api/classes/{classId} - Eliminar class
+            // 📍 DELETE /api/classes/{classId} - Eliminar classInfo
             delete("/{classId}") {
                 val principal = call.principal<JWTPrincipal>()
                 val userId = principal?.payload?.getClaim("id")?.asString()
@@ -83,7 +84,99 @@ fun Route.classRoutes(repo: ClassRepository) {
                 if (success) {
                     call.respond(HttpStatusCode.NoContent)
                 } else {
-                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Failed to delete class"))
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Failed to delete classInfo"))
+                }
+            }
+
+            // 📍 POST /api/classes/{classId}/enroll - Inscribirse a clase
+            post("/{classId}/enroll") {
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("id")?.asString()
+
+                if (userId.isNullOrEmpty()) {
+                    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                    return@post
+                }
+
+                val classId = call.parameters["classId"]
+                if (classId.isNullOrEmpty()) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Class ID is required"))
+                    return@post
+                }
+
+                val result = repo.enrollInClass(userId, classId)
+
+                if (result == null) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Failed to enroll. Class may be full or you're already enrolled"))
+                } else {
+                    call.respond(HttpStatusCode.OK, result)
+                }
+            }
+
+            // 📍 DELETE /api/classes/{classId}/enroll - Cancelar inscription
+            delete("/{classId}/enroll") {
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("id")?.asString()
+
+                if (userId.isNullOrEmpty()) {
+                    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                    return@delete
+                }
+
+                val classId = call.parameters["classId"]
+                if (classId.isNullOrEmpty()) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Class ID is required"))
+                    return@delete
+                }
+
+                val success = repo.cancelEnrollment(userId, classId)
+
+                if (success) {
+                    call.respond(HttpStatusCode.OK, mapOf("message" to "Enrollment cancelled successfully"))
+                } else {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Failed to cancel enrollment"))
+                }
+            }
+
+            // 📍 GET /api/classes/my-classes - Ver mis clases inscritas
+            get("/my-classes") {
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("id")?.asString()
+
+                if (userId.isNullOrEmpty()) {
+                    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                    return@get
+                }
+
+                val filter = call.request.queryParameters["filter"] ?: "all"
+
+                val result = repo.getMyClasses(userId, filter)
+
+                if (result == null) {
+                    call.respond(HttpStatusCode.NotFound, ErrorResponse("Athlete not found"))
+                } else {
+                    call.respond(HttpStatusCode.OK, result)
+                }
+            }
+
+            // 📍 GET /api/classes/available - Ver clases disponibles
+            get("/available") {
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("id")?.asString()
+
+                if (userId.isNullOrEmpty()) {
+                    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                    return@get
+                }
+
+                val dayOfWeek = call.request.queryParameters["dayOfWeek"]
+
+                val result = repo.getAvailableClasses(userId, dayOfWeek)
+
+                if (result == null) {
+                    call.respond(HttpStatusCode.NotFound, ErrorResponse("Athlete or box not found"))
+                } else {
+                    call.respond(HttpStatusCode.OK, result)
                 }
             }
         }

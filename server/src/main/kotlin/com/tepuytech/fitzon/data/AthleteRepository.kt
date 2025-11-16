@@ -6,13 +6,20 @@ import com.tepuytech.fitzon.models.AthleteDashboardResponse
 import com.tepuytech.fitzon.models.AthleteProfileResponse
 import com.tepuytech.fitzon.models.Athletes
 import com.tepuytech.fitzon.models.Boxes
+import com.tepuytech.fitzon.models.ClassEnrollments
+import com.tepuytech.fitzon.models.ClassSchedules
+import com.tepuytech.fitzon.models.Coaches
 import com.tepuytech.fitzon.models.LeaderboardEntryDTO
 import com.tepuytech.fitzon.models.PersonalRecordDTO
 import com.tepuytech.fitzon.models.PersonalRecords
 import com.tepuytech.fitzon.models.StatItem
+import com.tepuytech.fitzon.models.TodayClassDTO
+import com.tepuytech.fitzon.models.UpcomingClassDTO
 import com.tepuytech.fitzon.models.Users
 import com.tepuytech.fitzon.models.WorkoutLogs
+import com.tepuytech.fitzon.models.WorkoutPreviewDTO
 import com.tepuytech.fitzon.models.WorkoutStatsDTO
+import com.tepuytech.fitzon.models.Workouts
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
@@ -20,8 +27,11 @@ import org.jetbrains.exposed.sql.javatime.date
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.format.TextStyle
+import java.util.Locale
 import java.util.UUID
 
 class AthleteRepository {
@@ -148,6 +158,8 @@ class AthleteRepository {
         }
     }
 
+// REEMPLAZAR la función completa en AthleteRepository.kt
+
     fun getAthleteDashboard(userId: String): AthleteDashboardResponse? = transaction {
         try {
             val uuid = UUID.fromString(userId)
@@ -218,15 +230,119 @@ class AthleteRepository {
                 emptyList()
             }
 
+            // ============================================
+            // NUEVO: Clases de hoy inscritas
+            // ============================================
+            val todayDayOfWeek = LocalDate.now().dayOfWeek.getDisplayName(TextStyle.FULL, Locale.ENGLISH).uppercase()
+
+            val todayClasses = (ClassEnrollments innerJoin ClassSchedules)
+                .innerJoin(Coaches)
+                .innerJoin(Users)
+                .selectAll()
+                .where {
+                    (ClassEnrollments.athleteId eq athleteId) and
+                            (ClassSchedules.dayOfWeek eq todayDayOfWeek) and
+                            (Coaches.id eq ClassSchedules.coachId) and
+                            (Users.id eq Coaches.userId)
+                }
+                .map { row ->
+                    val workoutId = row[ClassSchedules.workoutId]
+
+                    val workout = if (workoutId != null) {
+                        Workouts
+                            .selectAll()
+                            .where { Workouts.id eq workoutId }
+                            .singleOrNull()
+                            ?.let { w ->
+                                val isCompleted = WorkoutLogs
+                                    .selectAll()
+                                    .where {
+                                        (WorkoutLogs.athleteId eq athleteId) and
+                                                (WorkoutLogs.workoutId eq workoutId) and
+                                                (WorkoutLogs.completedAt greaterEq LocalDateTime.now().toLocalDate().atStartOfDay())
+                                    }
+                                    .count() > 0
+
+                                WorkoutPreviewDTO(
+                                    id = w[Workouts.id].toString(),
+                                    title = w[Workouts.title],
+                                    difficulty = w[Workouts.difficulty],
+                                    duration = w[Workouts.duration],
+                                    isCompleted = isCompleted
+                                )
+                            }
+                    } else null
+
+                    TodayClassDTO(
+                        classId = row[ClassSchedules.id].toString(),
+                        className = row[ClassSchedules.name],
+                        startTime = row[ClassSchedules.startTime],
+                        endTime = row[ClassSchedules.endTime],
+                        coachName = row[Users.name] ?: "Coach",
+                        workout = workout,
+                        status = "upcoming"
+                    )
+                }
+
+            // ============================================
+            // NUEVO: Próximas clases (siguiente semana)
+            // ============================================
+            val upcomingClasses = (ClassEnrollments innerJoin ClassSchedules)
+                .innerJoin(Coaches)
+                .innerJoin(Users)
+                .selectAll()
+                .where {
+                    (ClassEnrollments.athleteId eq athleteId) and
+                            (ClassSchedules.dayOfWeek neq todayDayOfWeek) and
+                            (Coaches.id eq ClassSchedules.coachId) and
+                            (Users.id eq Coaches.userId)
+                }
+                .limit(3)
+                .map { row ->
+                    val dayOfWeek = row[ClassSchedules.dayOfWeek]
+                    val workoutId = row[ClassSchedules.workoutId]
+
+                    UpcomingClassDTO(
+                        classId = row[ClassSchedules.id].toString(),
+                        className = row[ClassSchedules.name],
+                        dayOfWeek = dayOfWeek,
+                        date = formatUpcomingDate(dayOfWeek),
+                        startTime = row[ClassSchedules.startTime],
+                        coachName = row[Users.name] ?: "Coach",
+                        hasWorkout = workoutId != null
+                    )
+                }
+
             AthleteDashboardResponse(
                 userName = user[Users.name] ?: "Atleta",
                 streakDays = streakDays,
                 workoutStats = workoutStats,
                 personalRecords = personalRecords,
-                leaderboard = leaderboard
+                leaderboard = leaderboard,
+                todayClasses = todayClasses,  // NUEVO
+                hasWorkoutToday = todayClasses.any { it.workout != null },  // NUEVO
+                upcomingClasses = upcomingClasses  // NUEVO
             )
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            println("Error getting athlete dashboard: ${e.message}")
+            e.printStackTrace()
             null
+        }
+    }
+
+    // AGREGAR esta function helper al final del archivo
+    private fun formatUpcomingDate(dayOfWeek: String): String {
+        val today = LocalDate.now()
+        val targetDay = DayOfWeek.valueOf(dayOfWeek)
+        val daysUntil = (targetDay.value - today.dayOfWeek.value + 7) % 7
+
+        return when (daysUntil) {
+            0 -> "Hoy"
+            1 -> "Mañana"
+            else -> {
+                val targetDate = today.plusDays(daysUntil.toLong())
+                "${targetDay.getDisplayName(TextStyle.FULL, Locale("es"))} ${targetDate.dayOfMonth} ${targetDate.month.getDisplayName(TextStyle.SHORT, Locale("es"))}"
+            }
         }
     }
 

@@ -28,3 +28,90 @@ data class ClassScheduleItem(
     val dayOfWeek: String,
     val isNow: Boolean = false
 )
+
+@Serializable
+data class EnrollmentResponse(
+    val message: String,
+    val enrollment: EnrollmentDTO,
+    val classInfo: ClassEnrollmentInfo
+)
+
+@Serializable
+data class EnrollmentDTO(
+    val id: String,
+    val classId: String,
+    val athleteId: String,
+    val enrolledAt: String
+)
+
+@Serializable
+data class ClassEnrollmentInfo(
+    val id: String,
+    val name: String,
+    val dayOfWeek: String,
+    val startTime: String,
+    val endTime: String,
+    val coachName: String,
+    val currentEnrollment: Int,
+    val maxCapacity: Int
+)
+
+@Serializable
+data class MyClassesResponse(
+    val today: List<TodayClassDTO>,
+    val thisWeek: List<UpcomingClassDTO>,
+    val upcoming: List<UpcomingClassDTO>
+)
+
+@Serializable
+data class TodayClassDTO(
+    val classId: String,
+    val className: String,
+    val startTime: String,
+    val endTime: String,
+    val coachName: String,
+    val workout: WorkoutPreviewDTO?,
+    val status: String  // "upcoming", "in_progress", "completed"
+)
+
+@Serializable
+data class WorkoutPreviewDTO(
+    val id: String,
+    val title: String,
+    val difficulty: String,
+    val duration: Int,
+    val isCompleted: Boolean
+)
+
+@Serializable
+data class UpcomingClassDTO(
+    val classId: String,
+    val className: String,
+    val dayOfWeek: String,
+    val date: String,  // "Mañana", "Viernes 15 Nov"
+    val startTime: String,
+    val coachName: String,
+    val hasWorkout: Boolean
+)
+
+@Serializable
+data class AvailableClassesResponse(
+    val classes: List<AvailableClassDTO>
+)
+
+@Serializable
+data class AvailableClassDTO(
+    val id: String,
+    val name: String,
+    val dayOfWeek: String,
+    val startTime: String,
+    val endTime: String,
+    val coachName: String,
+    val maxCapacity: Int,
+    val currentEnrollment: Int,
+    val spotsLeft: Int,
+    val isEnrolled: Boolean,
+    val workoutId: String?,
+    val workoutTitle: String?,
+    val level: String
+)

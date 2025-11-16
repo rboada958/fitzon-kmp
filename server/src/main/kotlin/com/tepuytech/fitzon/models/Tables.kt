@@ -87,7 +87,7 @@ object Classes : Table("classes") {
 
 object ClassEnrollments : Table("class_enrollments") {
     val id = uuid("id").autoGenerate()
-    val classId = uuid("class_id").references(Classes.id)
+    val classId = uuid("class_id").references(ClassSchedules.id)
     val athleteId = uuid("athlete_id").references(Athletes.id)
     val enrolledAt = datetime("enrolled_at").defaultExpression(CurrentDateTime)
 
@@ -173,7 +173,7 @@ object Achievements : Table("achievements") {
 }
 
 object ClassSchedules : Table("class_schedules") {
-    val id = uuid("id")
+    val id = uuid("id").autoGenerate()
     val boxId = uuid("box_id").references(Boxes.id)
     val coachId = uuid("coach_id").references(Coaches.id)
     val name = varchar("name", 255)
