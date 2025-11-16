@@ -120,9 +120,6 @@ class ClassRepository {
                     )
                 }
 
-            // ============================================
-            // NUEVO: Order correctamente en Kotlin
-            // ============================================
             val dayOrder = mapOf(
                 "MONDAY" to 1,
                 "TUESDAY" to 2,
@@ -380,11 +377,11 @@ class ClassRepository {
                         endTime = row[ClassSchedules.endTime],
                         coachName = row[Users.name] ?: "Coach",
                         workout = workout,
-                        status = "upcoming"  // Puedes calcular esto con la hora
+                        status = "upcoming"
                     )
                 }
 
-            // Próximas clases (siguiente semana)
+
             val upcomingClasses = enrolledClasses
                 .filter { it.second != todayDayOfWeek }
                 .take(5)
@@ -435,7 +432,7 @@ class ClassRepository {
                             (Users.id eq Coaches.userId)
                 }
 
-            // Filtrar por día si se proporciona
+
             if (dayOfWeek != null) {
                 query = query.andWhere { ClassSchedules.dayOfWeek eq dayOfWeek.uppercase() }
             }
