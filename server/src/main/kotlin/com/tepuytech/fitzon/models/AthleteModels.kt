@@ -8,7 +8,10 @@ data class AthleteDashboardResponse(
     val streakDays: Int,
     val workoutStats: WorkoutStatsDTO,
     val personalRecords: List<PersonalRecordDTO>,
-    val leaderboard: List<LeaderboardEntryDTO>
+    val leaderboard: List<LeaderboardEntryDTO>,
+    val todayClasses: List<TodayClassDTO>,
+    val hasWorkoutToday: Boolean,
+    val upcomingClasses: List<UpcomingClassDTO>
 )
 
 @Serializable

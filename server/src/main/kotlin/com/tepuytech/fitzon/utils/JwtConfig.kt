@@ -28,7 +28,7 @@ object JwtConfig {
         .withIssuer(ISSUER)
         .build()
 
-    // Data class para retornar ambos tokens
+    // Data classInfo para retornar ambos tokens
     data class TokenPair(
         val accessToken: String,
         val refreshToken: String,
