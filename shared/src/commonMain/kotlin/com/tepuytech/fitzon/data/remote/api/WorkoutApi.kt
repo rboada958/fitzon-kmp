@@ -21,8 +21,8 @@ class WorkoutApi(
     private val httpClient: HttpClient,
     private val sessionManager: SessionManager
 ) {
-    suspend fun workoutOfTheDay() : WorkoutResponse {
-        val response = httpClient.get("/api/workouts/today") {
+    suspend fun workoutOfTheDay(workoutId: String) : WorkoutResponse {
+        val response = httpClient.get("/api/workouts/${workoutId}") {
             header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
         }
 

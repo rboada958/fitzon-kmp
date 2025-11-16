@@ -69,6 +69,7 @@ import com.tepuytech.fitzon.domain.model.workout.ExerciseResponse
 import com.tepuytech.fitzon.domain.model.workout.WorkoutResponse
 import com.tepuytech.fitzon.getPlatform
 import com.tepuytech.fitzon.presentation.state.WorkoutUiState
+import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
 import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
 import com.tepuytech.fitzon.presentation.ui.composable.greenLight
@@ -77,7 +78,7 @@ import com.tepuytech.fitzon.presentation.ui.composable.textGray
 import com.tepuytech.fitzon.presentation.viewmodel.WorkoutViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-class WorkoutOfTheDay(val workout: WorkoutResponse?) : Screen {
+class WorkoutOfTheDay(val workoutId: String) : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -87,6 +88,14 @@ class WorkoutOfTheDay(val workout: WorkoutResponse?) : Screen {
         var showCompletionDialog by remember { mutableStateOf(false) }
         var message by remember { mutableStateOf("") }
 
+        val workout =
+            if (uiState is WorkoutUiState.Success) (uiState as WorkoutUiState.Success).workoutResponse
+            else null
+
+
+        LaunchedEffect(Unit) {
+            viewModel.getWorkoutById(workoutId)
+        }
 
         LaunchedEffect(uiState) {
             when (uiState) {
@@ -98,70 +107,85 @@ class WorkoutOfTheDay(val workout: WorkoutResponse?) : Screen {
             }
         }
 
-        WorkoutOfTheDayScreen(
-            workout = workout,
-            onBackClick = {
-                navigator.pop()
-            },
-            onCompletedWodClick = { id, calories, duration, notes ->
-                viewModel.completeWorkout(
-                    id,
-                    calories,
-                    duration,
-                    notes
-                )
-                println("Workout completado:")
-                println("ID: $id")
-                println("Calorías: $calories")
-                println("Duración: $duration min")
-                println("Notes: $notes")
+        when (uiState) {
+            is WorkoutUiState.LoadingWorkout -> {
+                AthleteDashboardShimmer()
             }
-        )
 
-        if (uiState is WorkoutUiState.Error) {
-            val error = uiState as WorkoutUiState.Error
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(brush = backgroundGradient),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = error.message,
-                        color = Color.Red,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = { navigator.pop() },
-                        shape = RoundedCornerShape(28.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = greenPrimary,
-                            disabledContainerColor = Color(0xFF2D6A4F)
+            is WorkoutUiState.Error -> {
+                val error = uiState as WorkoutUiState.Error
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(brush = backgroundGradient),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = error.message,
+                            color = Color.Red,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
                         )
-                    ) {
-                        Text("Volver")
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { navigator.pop() },
+                            shape = RoundedCornerShape(28.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = greenPrimary,
+                                disabledContainerColor = Color(0xFF2D6A4F)
+                            )
+                        ) {
+                            Text("Volver")
+                        }
                     }
                 }
             }
-            return
-        }
 
-        if (uiState is WorkoutUiState.Loading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f)),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    color = greenLight,
-                    strokeWidth = 4.dp,
-                    modifier = Modifier.size(60.dp)
-                )
+            is WorkoutUiState.Success,
+            is WorkoutUiState.SuccessCompleteWorkout,
+            is WorkoutUiState.Loading -> {
+                if (workout != null) {
+                    WorkoutOfTheDayScreen(
+                        workout = workout,
+                        onBackClick = { navigator.pop() },
+                        onCompletedWodClick = { id, calories, duration, notes ->
+                            viewModel.completeWorkout(id, calories, duration, notes)
+                        }
+                    )
+
+                    // Overlay de loading solo cuando está en Loading
+                    if (uiState is WorkoutUiState.Loading) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.5f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = greenLight,
+                                strokeWidth = 4.dp,
+                                modifier = Modifier.size(60.dp)
+                            )
+                        }
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(brush = backgroundGradient),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = greenLight,
+                            strokeWidth = 4.dp,
+                            modifier = Modifier.size(60.dp)
+                        )
+                    }
+                }
             }
+
+            else -> {}
         }
 
         if (showCompletionDialog) {
@@ -184,7 +208,7 @@ class WorkoutOfTheDay(val workout: WorkoutResponse?) : Screen {
                     Button(
                         onClick = {
                             showCompletionDialog = false
-
+                            navigator.pop()
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = greenPrimary
@@ -207,7 +231,9 @@ fun WorkoutOfTheDayScreen(
     onBackClick: () -> Unit,
     onCompletedWodClick: (String, Int, Int, String) -> Unit = { _, _, _, _ -> }
 ) {
-    var exercises by remember { mutableStateOf(workout?.exercises ?: emptyList()) }
+    var exercises by remember(workout) {
+        mutableStateOf(workout?.exercises ?: emptyList())
+    }
 
 
     val allCompleted = if (exercises.isNotEmpty()) exercises.all { it.isCompleted } else false

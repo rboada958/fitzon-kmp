@@ -24,9 +24,9 @@ class WorkoutRepositoryImpl(
     private val api: TokenApi,
     private val sessionManager: SessionManager
 ) : WorkoutRepository {
-    override suspend fun workoutOfTheDay(): WorkoutResponse {
+    override suspend fun workoutOfTheDay(workoutId: String): WorkoutResponse {
         return try {
-            apiService.workoutOfTheDay()
+            apiService.workoutOfTheDay(workoutId)
         } catch (e: ClientRequestException) {
             // Si es 401, try refresh el token
             if (e.response.status == HttpStatusCode.Unauthorized) {
@@ -37,7 +37,7 @@ class WorkoutRepositoryImpl(
                         refreshToken = tokenResponse.refreshToken
                     )
                     // Reintentar la petition
-                    return apiService.workoutOfTheDay()
+                    return apiService.workoutOfTheDay(workoutId)
                 } catch (_: Exception) {
                     throw ApiException("Authentication failed - please login again")
                 }

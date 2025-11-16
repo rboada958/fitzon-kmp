@@ -8,7 +8,7 @@ import com.tepuytech.fitzon.domain.model.workout.CreateWorkoutResponse
 import com.tepuytech.fitzon.domain.model.workout.WorkoutResponse
 
 interface WorkoutRepository {
-    suspend fun workoutOfTheDay() : WorkoutResponse
+    suspend fun workoutOfTheDay(workoutId : String) : WorkoutResponse
     suspend fun boxWorkout(boxId : String) : List<BoxWorkoutResponse>
     suspend fun deleteWorkout(workoutId: String)
     suspend fun createWorkout(workout: CreateWorkoutRequest) : CreateWorkoutResponse

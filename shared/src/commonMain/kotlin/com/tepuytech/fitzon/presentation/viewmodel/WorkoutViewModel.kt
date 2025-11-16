@@ -26,11 +26,11 @@ class WorkoutViewModel (
     private val _uiState = MutableStateFlow<WorkoutUiState>(WorkoutUiState.Idle)
     val uiState: StateFlow<WorkoutUiState> = _uiState
 
-    fun workoutOfTheDay() {
+    fun getWorkoutById(workoutId: String) {
         screenModelScope.launch {
-            _uiState.value = WorkoutUiState.Loading
+            _uiState.value = WorkoutUiState.LoadingWorkout
             try {
-                when (val result = workoutOfTheDayUseCase()) {
+                when (val result = workoutOfTheDayUseCase(workoutId)) {
                     is WorkoutResult.Success -> {
                         _uiState.value = WorkoutUiState.Success(result.workoutData)
                     }

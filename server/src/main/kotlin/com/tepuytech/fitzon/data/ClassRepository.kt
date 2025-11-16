@@ -159,14 +159,16 @@ class ClassRepository {
 
             val boxId = box[Boxes.id]
 
-            // Soft delete - marcar como inactiva
-            ClassSchedules.update({
+            val deletedRows = ClassSchedules.deleteWhere {
                 (ClassSchedules.id eq classUuid) and
                         (ClassSchedules.boxId eq boxId)
-            }) {
-                it[ClassSchedules.isActive] = false
-            } > 0
-        } catch (_: Exception) {
+            }
+
+            deletedRows > 0
+
+        } catch (e: Exception) {
+            println("Error deleting class: ${e.message}")
+            e.printStackTrace()
             false
         }
     }

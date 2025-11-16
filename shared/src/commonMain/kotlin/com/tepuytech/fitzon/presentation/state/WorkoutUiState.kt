@@ -8,6 +8,7 @@ import com.tepuytech.fitzon.domain.model.workout.WorkoutResponse
 sealed class WorkoutUiState {
     object Idle : WorkoutUiState()
     object Loading : WorkoutUiState()
+    object LoadingWorkout : WorkoutUiState()
     object LoadingDeleteWorkout : WorkoutUiState()
     data class Success(val workoutResponse: WorkoutResponse) : WorkoutUiState()
     data class SuccessBoxWorkout(val boxWorkoutData: List<BoxWorkoutResponse>) : WorkoutUiState()

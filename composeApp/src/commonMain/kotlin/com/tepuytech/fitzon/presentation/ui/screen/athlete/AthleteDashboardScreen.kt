@@ -6,40 +6,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,19 +28,13 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.tepuytech.fitzon.domain.model.Leaderboard
 import com.tepuytech.fitzon.domain.model.PersonalRecord
+import com.tepuytech.fitzon.domain.model.TodayClass
+import com.tepuytech.fitzon.domain.model.UpcomingClass
 import com.tepuytech.fitzon.domain.model.athletes.AthleteDashboardResponse
-import com.tepuytech.fitzon.domain.model.workout.WorkoutResponse
 import com.tepuytech.fitzon.presentation.state.AthleteUiState
-import com.tepuytech.fitzon.presentation.state.WorkoutUiState
-import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
-import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
-import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
-import com.tepuytech.fitzon.presentation.ui.composable.greenLight
-import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
-import com.tepuytech.fitzon.presentation.ui.composable.textGray
+import com.tepuytech.fitzon.presentation.ui.composable.*
 import com.tepuytech.fitzon.presentation.ui.screen.NotificationCenter
 import com.tepuytech.fitzon.presentation.viewmodel.AthleteViewModel
-import com.tepuytech.fitzon.presentation.viewmodel.WorkoutViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 class AthleteDashboard : Screen {
@@ -76,86 +43,51 @@ class AthleteDashboard : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = getScreenModel<AthleteViewModel>()
         val uiState by viewModel.uiState.collectAsState()
-        val workoutViewModel = getScreenModel<WorkoutViewModel>()
-        val workoutUiState by workoutViewModel.uiState.collectAsState()
-
 
         LaunchedEffect(Unit) {
-            workoutViewModel.workoutOfTheDay()
+            viewModel.athleteDashboard()
         }
 
-        LaunchedEffect(workoutUiState) {
-            when (workoutUiState) {
-                is WorkoutUiState.Success,
-                is WorkoutUiState.Empty -> {
-                    viewModel.athleteDashboard()
-                }
-                else -> {}
+        when (val state = uiState) {
+            is AthleteUiState.Loading -> {
+                AthleteDashboardShimmer()
             }
-        }
 
-        if (uiState is AthleteUiState.Loading || workoutUiState is WorkoutUiState.Loading) {
-            AthleteDashboardShimmer()
-            return
-        }
-
-        if (workoutUiState is WorkoutUiState.Error) {
-            val error = workoutUiState as WorkoutUiState.Error
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(brush = backgroundGradient),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Error: ${error.message}", color = Color.Red)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = { workoutViewModel.workoutOfTheDay() }) {
-                        Text("Reintentar")
+            is AthleteUiState.Error -> {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(brush = backgroundGradient),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Error: ${state.message}", color = Color.Red)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { viewModel.athleteDashboard() }) {
+                            Text("Reintentar")
+                        }
                     }
                 }
             }
-            return
-        }
 
-        if (uiState is AthleteUiState.Error) {
-            val error = uiState as AthleteUiState.Error
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(brush = backgroundGradient),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Error: ${error.message}", color = Color.Red)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = { viewModel.athleteDashboard() }) {
-                        Text("Reintentar")
-                    }
-                }
-            }
-            return
-        }
-
-        if (uiState is AthleteUiState.Success) {
-            val athleteState = uiState as AthleteUiState.Success
-
-            val workout = when (val state = workoutUiState) {
-                is WorkoutUiState.Success -> state.workoutResponse
-                else -> null
+            is AthleteUiState.Success -> {
+                AthleteDashboardScreen(
+                    dashboard = state.dashboard,
+                    onNotificationClick = { navigator.push(NotificationCenter()) },
+                    onProfileClick = { navigator.push(AthleteProfile()) },
+                    onWorkoutClick = { workoutId ->
+                        navigator.push(WorkoutOfTheDay(workoutId))
+                    },
+                    onViewAvailableClasses = {
+                        // Navegar a clases disponibles
+                        // navigator.push(AvailableClasses())
+                    },
+                    onPersonalRecordsClick = {},
+                    onLeaderboardClick = {}
+                )
             }
 
-            AthleteDashboardScreen(
-                dashboard = athleteState.dashboard,
-                workout = workout,
-                onNotificationClick = { navigator.push(NotificationCenter()) },
-                onProfileClick = { navigator.push(AthleteProfile()) },
-                onWorkoutClick = { navigator.push(WorkoutOfTheDay(workout)) },
-                onPersonalRecordsClick = {},
-                onLeaderboardClick = {}
-            )
-        } else {
-            AthleteDashboardShimmer()
+            else -> {}
         }
     }
 }
@@ -164,18 +96,19 @@ class AthleteDashboard : Screen {
 @Composable
 fun AthleteDashboardScreen(
     dashboard: AthleteDashboardResponse = AthleteDashboardResponse(),
-    workout: WorkoutResponse? = null,
     onNotificationClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
-    onWorkoutClick: () -> Unit = {},
+    onWorkoutClick: (String) -> Unit = {},
+    onViewAvailableClasses: () -> Unit = {},
     onPersonalRecordsClick: () -> Unit = {},
     onLeaderboardClick: () -> Unit = {}
 ) {
-
     var visible by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         visible = true
     }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -210,9 +143,7 @@ fun AthleteDashboardScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
                         modifier = Modifier
-                            .clickable {
-                                onProfileClick()
-                            }
+                            .clickable { onProfileClick() }
                             .size(40.dp)
                             .clip(CircleShape),
                         color = greenPrimary
@@ -262,25 +193,19 @@ fun AthleteDashboardScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        dashboard.streakDays.let { streakDays ->
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                if (streakDays != null) {
-                                    if (streakDays > 0) {
-                                        Text(
-                                            text = "🔥",
-                                            fontSize = 24.sp
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        val label = if (streakDays == 1) "día consecutivo" else "dias consecutivos"
-                                        Text(
-                                            text = "$streakDays $label entrenando",
-                                            fontSize = 16.sp,
-                                            color = greenLight,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    }
+                        dashboard.streakDays?.let { streakDays ->
+                            if (streakDays > 0) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("🔥", fontSize = 24.sp)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    val label =
+                                        if (streakDays == 1) "día consecutivo" else "días consecutivos"
+                                    Text(
+                                        text = "$streakDays $label entrenando",
+                                        fontSize = 16.sp,
+                                        color = greenLight,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
                                 }
                             }
                         }
@@ -295,114 +220,76 @@ fun AthleteDashboardScreen(
                         animationSpec = tween(500, delayMillis = 100)
                     )
                 ) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        color = greenPrimary
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp)
-                        ) {
-                            if (workout?.message.isNullOrEmpty()) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column {
-                                        Text(
-                                            text = "WORKOUT DEL DÍA",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF081C15).copy(alpha = 0.7f),
-                                            letterSpacing = 1.sp
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = workout?.title ?: "No asignado",
-                                            fontSize = 24.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF081C15)
-                                        )
-                                    }
+                    Column {
+                        Text(
+                            text = "📅 Tus Clases de Hoy",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
 
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = Color(0xFF081C15).copy(alpha = 0.2f)
-                                    ) {
-                                        Box(
-                                            modifier = Modifier.padding(12.dp)
-                                        ) {
-                                            Text("🏋️", fontSize = 28.sp)
-                                        }
-                                    }
-                                }
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                Text(
-                                    text = buildString {
-                                        append(workout?.exercises?.size?.toString() ?: "0")
-                                        append(" ejercicios • ")
-                                        append(workout?.duration?.let { "$it min" } ?: "No asignado")
-                                        append(" • ")
-                                        append(workout?.difficulty ?: "No asignado")
-                                    },
-                                    fontSize = 14.sp,
-                                    color = Color(0xFF081C15).copy(alpha = 0.8f)
-                                )
-
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                Button(
-                                    onClick = { onWorkoutClick() },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF081C15)
-                                    )
-                                ) {
-                                    Text(
-                                        "Empezar Ahora",
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = greenLight,
-                                        modifier = Modifier.padding(vertical = 4.dp)
-                                    )
-                                }
-                            }  else {
+                        if (dashboard.todayClasses.isNullOrEmpty()) {
+                            // No tiene clases hoy
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(20.dp),
+                                color = cardBackground
+                            ) {
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 32.dp),
+                                        .padding(24.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
-                                    Text(
-                                        text = "🏋️‍♂️",
-                                        fontSize = 42.sp
-                                    )
+                                    Text("🏋️‍♂️", fontSize = 48.sp)
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Text(
-                                        text = workout.message ?: "No hay un workout disponible por ahora",
-                                        fontSize = 16.sp,
-                                        color = Color(0xFF081C15).copy(alpha = 0.8f),
-                                        textAlign = TextAlign.Center,
-                                        fontWeight = FontWeight.Medium
+                                        text = "No tienes clases hoy",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.White,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Inscríbete a una clase para entrenar",
+                                        fontSize = 14.sp,
+                                        color = textGray,
+                                        textAlign = TextAlign.Center
                                     )
                                     Spacer(modifier = Modifier.height(16.dp))
                                     Button(
-                                        onClick = { onWorkoutClick() },
+                                        onClick = onViewAvailableClasses,
                                         shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF081C15))
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = greenPrimary
+                                        )
                                     ) {
                                         Text(
-                                            "Ver otros entrenamientos",
+                                            "Ver Clases Disponibles",
                                             fontSize = 15.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = greenLight,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                            color = Color(0xFF081C15),
+                                            modifier = Modifier.padding(
+                                                horizontal = 8.dp,
+                                                vertical = 4.dp
+                                            )
                                         )
                                     }
+                                }
+                            }
+                        } else {
+                            // Clases de hoy
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                dashboard.todayClasses?.forEach { classItem ->
+                                    TodayClassCard(
+                                        classItem = classItem,
+                                        onWorkoutClick = { onWorkoutClick(it) }
+                                    )
                                 }
                             }
                         }
@@ -411,11 +298,61 @@ fun AthleteDashboardScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                dashboard.workoutStats?.let {
+                // ============================================
+                // PRÓXIMAS CLASES
+                // ============================================
+                if (dashboard.upcomingClasses.isNotEmpty()) {
                     AnimatedVisibility(
                         visible = visible,
                         enter = fadeIn() + slideInVertically(
                             animationSpec = tween(500, delayMillis = 200)
+                        )
+                    ) {
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "📆 Próximas Clases",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+
+                                TextButton(onClick = onViewAvailableClasses) {
+                                    Text(
+                                        "Ver todas",
+                                        color = greenLight,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                dashboard.upcomingClasses.take(3).forEach { classItem ->
+                                    UpcomingClassCard(classItem = classItem)
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+
+                // ============================================
+                // ESTA SEMANA (Stats)
+                // ============================================
+                dashboard.workoutStats?.let {
+                    AnimatedVisibility(
+                        visible = visible,
+                        enter = fadeIn() + slideInVertically(
+                            animationSpec = tween(500, delayMillis = 300)
                         )
                     ) {
                         Column {
@@ -433,11 +370,9 @@ fun AthleteDashboardScreen(
                                 shape = RoundedCornerShape(16.dp),
                                 color = cardBackground
                             ) {
-
                                 Column(
                                     modifier = Modifier.padding(20.dp)
                                 ) {
-
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -499,14 +434,17 @@ fun AthleteDashboardScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                // ============================================
+                // PERSONAL RECORDS
+                // ============================================
                 dashboard.personalRecords?.let { personalRecords ->
-                    AnimatedVisibility(
-                        visible = visible,
-                        enter = fadeIn() + slideInVertically(
-                            animationSpec = tween(500, delayMillis = 300)
-                        )
-                    ) {
-                        if (personalRecords.isNotEmpty()) {
+                    if (personalRecords.isNotEmpty()) {
+                        AnimatedVisibility(
+                            visible = visible,
+                            enter = fadeIn() + slideInVertically(
+                                animationSpec = tween(500, delayMillis = 400)
+                            )
+                        ) {
                             Column {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -534,8 +472,6 @@ fun AthleteDashboardScreen(
                                 Column(
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-
-
                                     personalRecords.forEach { record ->
                                         PersonalRecordCard(
                                             record = record,
@@ -546,15 +482,19 @@ fun AthleteDashboardScreen(
                                     }
                                 }
                             }
-                            Spacer(modifier = Modifier.height(24.dp))
                         }
+
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
 
+                // ============================================
+                // LEADERBOARD
+                // ============================================
                 AnimatedVisibility(
                     visible = visible,
                     enter = fadeIn() + slideInVertically(
-                        animationSpec = tween(500, delayMillis = 400)
+                        animationSpec = tween(500, delayMillis = 500)
                     )
                 ) {
                     Column {
@@ -580,6 +520,7 @@ fun AthleteDashboardScreen(
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
+
                         dashboard.leaderboard?.let { leaderboard ->
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
@@ -617,6 +558,194 @@ fun AthleteDashboardScreen(
 }
 
 @Composable
+fun TodayClassCard(
+    classItem: TodayClass, onWorkoutClick: (String) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), color = greenPrimary
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = classItem.className,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF081C15)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "👨‍🏫 ${classItem.coachName}",
+                        fontSize = 14.sp,
+                        color = Color(0xFF081C15).copy(alpha = 0.7f)
+                    )
+                    Text(
+                        text = "⏰ ${classItem.startTime} - ${classItem.endTime}",
+                        fontSize = 14.sp,
+                        color = Color(0xFF081C15).copy(alpha = 0.7f)
+                    )
+                }
+
+                Surface(
+                    shape = CircleShape, color = Color(0xFF081C15).copy(alpha = 0.2f)
+                ) {
+                    Box(modifier = Modifier.padding(12.dp)) {
+                        Text("🏋️", fontSize = 28.sp)
+                    }
+                }
+            }
+
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            HorizontalDivider(
+                color = Color(0xFF081C15).copy(alpha = 0.2f), thickness = 1.dp
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "WORKOUT",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF081C15).copy(alpha = 0.5f),
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = classItem.workout.title,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF081C15)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "${classItem.workout.duration} min • ${classItem.workout.difficulty}",
+                        fontSize = 13.sp,
+                        color = Color(0xFF081C15).copy(alpha = 0.7f)
+                    )
+                }
+
+                if (classItem.workout.isCompleted) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFF081C15).copy(alpha = 0.2f)
+                    ) {
+                        Text(
+                            text = "✓ Completado",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF081C15),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (!classItem.workout.isCompleted) {
+                Button(
+                    onClick = { onWorkoutClick(classItem.workout.id) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF081C15)
+                    )
+                ) {
+                    Text(
+                        "Empezar Workout",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = greenLight,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun UpcomingClassCard(
+    classItem: UpcomingClass
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = cardBackground
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = classItem.className,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+
+                    if (classItem.hasWorkout) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = greenPrimary.copy(alpha = 0.2f)
+                        ) {
+                            Text(
+                                text = "WOD",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = greenPrimary,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "${classItem.date} • ${classItem.startTime}",
+                    fontSize = 13.sp,
+                    color = textGray
+                )
+
+                Text(
+                    text = "👨‍🏫 ${classItem.coachName}",
+                    fontSize = 12.sp,
+                    color = textGray
+                )
+            }
+
+            Text(
+                text = "📅",
+                fontSize = 24.sp
+            )
+        }
+    }
+}
+
+@Composable
 fun StatItem(
     icon: String,
     value: String,
@@ -627,10 +756,7 @@ fun StatItem(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = icon,
-            fontSize = 32.sp
-        )
+        Text(text = icon, fontSize = 32.sp)
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = value,
@@ -665,12 +791,8 @@ fun PersonalRecordCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = record.exerciseName,
                         fontSize = 16.sp,
