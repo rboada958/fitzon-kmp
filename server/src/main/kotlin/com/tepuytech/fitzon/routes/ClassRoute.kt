@@ -19,7 +19,7 @@ fun Route.classRoutes(repo: ClassRepository) {
     route("/classes") {
         authenticate("auth-jwt") {
 
-            // 📍 POST /api/classes - Crear classInfo
+            // 📍 POST /api/classes - Crear class
             post {
                 val principal = call.principal<JWTPrincipal>()
                 val userId = principal?.payload?.getClaim("id")?.asString()
@@ -56,7 +56,7 @@ fun Route.classRoutes(repo: ClassRepository) {
                 }
             }
 
-            // 📍 GET /api/classes/box/{boxId} - Listar classInfo del box
+            // 📍 GET /api/classes/box/{boxId} - Listar class del box
             get("/box/{boxId}") {
                 val boxId = call.parameters["boxId"]
 

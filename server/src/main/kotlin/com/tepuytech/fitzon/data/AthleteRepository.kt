@@ -158,8 +158,6 @@ class AthleteRepository {
         }
     }
 
-// REEMPLAZAR la función completa en AthleteRepository.kt
-
     fun getAthleteDashboard(userId: String): AthleteDashboardResponse? = transaction {
         try {
             val uuid = UUID.fromString(userId)
@@ -230,9 +228,6 @@ class AthleteRepository {
                 emptyList()
             }
 
-            // ============================================
-            // NUEVO: Clases de hoy inscritas
-            // ============================================
             val todayDayOfWeek = LocalDate.now().dayOfWeek.getDisplayName(TextStyle.FULL, Locale.ENGLISH).uppercase()
 
             val todayClasses = (ClassEnrollments innerJoin ClassSchedules)
@@ -284,9 +279,6 @@ class AthleteRepository {
                     )
                 }
 
-            // ============================================
-            // NUEVO: Próximas clases (siguiente semana)
-            // ============================================
             val upcomingClasses = (ClassEnrollments innerJoin ClassSchedules)
                 .innerJoin(Coaches)
                 .innerJoin(Users)
@@ -319,9 +311,9 @@ class AthleteRepository {
                 workoutStats = workoutStats,
                 personalRecords = personalRecords,
                 leaderboard = leaderboard,
-                todayClasses = todayClasses,  // NUEVO
-                hasWorkoutToday = todayClasses.any { it.workout != null },  // NUEVO
-                upcomingClasses = upcomingClasses  // NUEVO
+                todayClasses = todayClasses,
+                hasWorkoutToday = todayClasses.any { it.workout != null },
+                upcomingClasses = upcomingClasses
             )
         } catch (e: Exception) {
             println("Error getting athlete dashboard: ${e.message}")
@@ -330,13 +322,10 @@ class AthleteRepository {
         }
     }
 
-    // AGREGAR esta function helper al final del archivo
     private fun formatUpcomingDate(dayOfWeek: String): String {
         val today = LocalDate.now()
         val targetDay = DayOfWeek.valueOf(dayOfWeek)
-        val daysUntil = (targetDay.value - today.dayOfWeek.value + 7) % 7
-
-        return when (daysUntil) {
+        return when (val daysUntil = (targetDay.value - today.dayOfWeek.value + 7) % 7) {
             0 -> "Hoy"
             1 -> "Mañana"
             else -> {
@@ -448,7 +437,7 @@ class AthleteRepository {
                 .toInt()
 
             // Obtener achievements
-            val achievements = getAchievements(athleteId, totalWorkouts, currentStreak, personalRecordsCount)
+            val achievements = getAchievements(totalWorkouts, currentStreak, personalRecordsCount)
 
             // Formatear fecha de ingreso
             val joinedAt = athlete[Athletes.joinedAt]
@@ -482,7 +471,7 @@ class AthleteRepository {
         }
     }
 
-    private fun getAchievements(athleteId: UUID, totalWorkouts: Int, streak: Int, prs: Int): List<AchievementDTO> {
+    private fun getAchievements(totalWorkouts: Int, streak: Int, prs: Int): List<AchievementDTO> {
         return listOf(
             AchievementDTO(
                 icon = "🔥",

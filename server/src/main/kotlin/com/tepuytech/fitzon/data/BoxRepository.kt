@@ -145,9 +145,7 @@ class BoxRepository {
             val todayClasses = try {
                 ClassSchedules.selectAll()
                     .where {
-                        (ClassSchedules.boxId eq boxId) and
-                                (ClassSchedules.dayOfWeek eq currentDay) and
-                                (ClassSchedules.isActive eq true)
+                        (ClassSchedules.boxId eq boxId) and (ClassSchedules.dayOfWeek eq currentDay)
                     }
                     .orderBy(ClassSchedules.startTime)
                     .map { schedule ->
@@ -421,10 +419,7 @@ class BoxRepository {
 
             // Total de classes (schedules únicos)
             val classes = ClassSchedules.selectAll()
-                .where {
-                    (ClassSchedules.boxId eq boxId) and
-                            (ClassSchedules.isActive eq true)
-                }
+                .where { (ClassSchedules.boxId eq boxId) }
                 .count()
                 .toInt()
 
