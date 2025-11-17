@@ -1,6 +1,9 @@
 package com.tepuytech.fitzon.data.remote.api
 
 import com.tepuytech.fitzon.data.local.SessionManager
+import com.tepuytech.fitzon.domain.model.athletes.AvailableClassesResponse
+import com.tepuytech.fitzon.domain.model.athletes.EnrollmentResponse
+import com.tepuytech.fitzon.domain.model.athletes.UnEnrollmentResponse
 import com.tepuytech.fitzon.domain.model.classes.ClassesResponse
 import com.tepuytech.fitzon.domain.model.classes.CreateClassRequest
 import com.tepuytech.fitzon.domain.model.classes.CreateClassResponse
@@ -53,5 +56,41 @@ class ClassApi(
             HttpStatusCode.Unauthorized -> throw ClientRequestException(response, "Unauthorized")
             else -> throw ClientRequestException(response, "Error deleting class: ${response.status}")
         }
+    }
+
+    suspend fun availableClasses() : AvailableClassesResponse {
+        val response = httpClient.get("api/classes/available") {
+            header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
+        }
+
+        if (response.status == HttpStatusCode.Unauthorized) {
+            throw ClientRequestException(response, "Unauthorized")
+        }
+
+        return response.body()
+    }
+
+    suspend fun enrollInClass(classId: String) : EnrollmentResponse {
+        val response = httpClient.post("api/classes/${classId}/enroll") {
+            header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
+        }
+
+        if (response.status == HttpStatusCode.Unauthorized) {
+            throw ClientRequestException(response, "Unauthorized")
+        }
+
+        return response.body()
+    }
+
+    suspend fun unenrollInClass(classId: String) : UnEnrollmentResponse {
+        val response = httpClient.delete("api/classes/${classId}/enroll") {
+            header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
+        }
+
+        if (response.status == HttpStatusCode.Unauthorized) {
+            throw ClientRequestException(response, "Unauthorized")
+        }
+
+        return response.body()
     }
 }

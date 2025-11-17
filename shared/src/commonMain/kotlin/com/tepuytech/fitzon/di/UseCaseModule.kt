@@ -2,6 +2,7 @@ package com.tepuytech.fitzon.di
 
 import com.tepuytech.fitzon.domain.usecase.AthleteDashboardUseCase
 import com.tepuytech.fitzon.domain.usecase.AthleteProfileUseCase
+import com.tepuytech.fitzon.domain.usecase.AvailableClassesUseCase
 import com.tepuytech.fitzon.domain.usecase.BoxDashboardUseCase
 import com.tepuytech.fitzon.domain.usecase.BoxInfoUseCase
 import com.tepuytech.fitzon.domain.usecase.BoxProfileUseCase
@@ -14,11 +15,13 @@ import com.tepuytech.fitzon.domain.usecase.CreateClassUseCase
 import com.tepuytech.fitzon.domain.usecase.CreateWorkoutUseCase
 import com.tepuytech.fitzon.domain.usecase.DeleteClassUseCase
 import com.tepuytech.fitzon.domain.usecase.DeleteWorkoutUseCase
+import com.tepuytech.fitzon.domain.usecase.EnrollClassUseCase
 import com.tepuytech.fitzon.domain.usecase.IsUserLoggedInUseCase
 import com.tepuytech.fitzon.domain.usecase.LoginUseCase
 import com.tepuytech.fitzon.domain.usecase.LogoutUseCase
 import com.tepuytech.fitzon.domain.usecase.MembersUseCase
 import com.tepuytech.fitzon.domain.usecase.RegisterUseCase
+import com.tepuytech.fitzon.domain.usecase.UnEnrollClassUseCase
 import com.tepuytech.fitzon.domain.usecase.UpdateAthleteProfileUseCase
 import com.tepuytech.fitzon.domain.usecase.UpdateBoxProfileUseCase
 import com.tepuytech.fitzon.domain.usecase.UserRoleUseCase
@@ -146,6 +149,24 @@ val useCaseModule = module {
 
     factory {
         DeleteClassUseCase(
+            classRepository = get()
+        )
+    }
+
+    factory {
+        AvailableClassesUseCase(
+            classRepository = get()
+        )
+    }
+
+    factory {
+        EnrollClassUseCase(
+            classRepository = get()
+        )
+    }
+
+    factory {
+        UnEnrollClassUseCase(
             classRepository = get()
         )
     }

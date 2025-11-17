@@ -63,7 +63,10 @@ val viewModelModule = module {
         ClassViewModel(
             createClassUseCase = get(),
             classesUseCase = get(),
-            deleteClassUseCase = get()
+            deleteClassUseCase = get(),
+            availableClassesUseCase = get(),
+            enrollClassUseCase = get(),
+            unenrollClassUseCase = get()
         )
     }
 

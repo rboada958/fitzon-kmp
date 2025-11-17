@@ -4,6 +4,9 @@ import com.tepuytech.fitzon.data.local.SessionManager
 import com.tepuytech.fitzon.data.remote.ApiException
 import com.tepuytech.fitzon.data.remote.api.ClassApi
 import com.tepuytech.fitzon.data.remote.api.TokenApi
+import com.tepuytech.fitzon.domain.model.athletes.AvailableClassesResponse
+import com.tepuytech.fitzon.domain.model.athletes.EnrollmentResponse
+import com.tepuytech.fitzon.domain.model.athletes.UnEnrollmentResponse
 import com.tepuytech.fitzon.domain.model.box.BoxDashboardResponse
 import com.tepuytech.fitzon.domain.model.classes.ClassesResponse
 import com.tepuytech.fitzon.domain.model.classes.CreateClassRequest
@@ -97,6 +100,99 @@ class ClassRepositoryImpl(
                         refreshToken = tokenResponse.refreshToken
                     )
                     apiService.deleteClass(classId)
+                } catch (_: Exception) {
+                    throw ApiException("Authentication failed - please login again")
+                }
+            } else {
+                try {
+                    val errorResponse = e.response.body<BoxDashboardResponse>()
+                    throw ApiException(errorResponse.message ?: "Unknown error")
+                } catch (e: Exception) {
+                    println("Error: ${e.message}")
+                    throw ApiException("Failed to delete workout")
+                }
+            }
+        } catch (_: ServerResponseException) {
+            throw ApiException("Server error")
+        } catch (e: Exception) {
+            throw ApiException(e.message ?: "Connection error")
+        }
+    }
+
+    override suspend fun availableClasses(): AvailableClassesResponse {
+       return try {
+            apiService.availableClasses()
+        } catch (e: ClientRequestException) {
+            if (e.response.status == HttpStatusCode.Unauthorized) {
+                try {
+                    val tokenResponse = api.refreshToken()
+                    sessionManager.updateTokens(
+                        accessToken = tokenResponse.accessToken,
+                        refreshToken = tokenResponse.refreshToken
+                    )
+                    apiService.availableClasses()
+                } catch (_: Exception) {
+                    throw ApiException("Authentication failed - please login again")
+                }
+            } else {
+                try {
+                    val errorResponse = e.response.body<BoxDashboardResponse>()
+                    throw ApiException(errorResponse.message ?: "Unknown error")
+                } catch (e: Exception) {
+                    println("Error: ${e.message}")
+                    throw ApiException("Failed to delete workout")
+                }
+            }
+        } catch (_: ServerResponseException) {
+            throw ApiException("Server error")
+        } catch (e: Exception) {
+            throw ApiException(e.message ?: "Connection error")
+        }
+    }
+
+    override suspend fun enrollInClass(classId: String): EnrollmentResponse {
+        return try {
+            apiService.enrollInClass(classId)
+        } catch (e: ClientRequestException) {
+            if (e.response.status == HttpStatusCode.Unauthorized) {
+                try {
+                    val tokenResponse = api.refreshToken()
+                    sessionManager.updateTokens(
+                        accessToken = tokenResponse.accessToken,
+                        refreshToken = tokenResponse.refreshToken
+                    )
+                    apiService.enrollInClass(classId)
+                } catch (_: Exception) {
+                    throw ApiException("Authentication failed - please login again")
+                }
+            } else {
+                try {
+                    val errorResponse = e.response.body<BoxDashboardResponse>()
+                    throw ApiException(errorResponse.message ?: "Unknown error")
+                } catch (e: Exception) {
+                    println("Error: ${e.message}")
+                    throw ApiException("Failed to delete workout")
+                }
+            }
+        } catch (_: ServerResponseException) {
+            throw ApiException("Server error")
+        } catch (e: Exception) {
+            throw ApiException(e.message ?: "Connection error")
+        }
+    }
+
+    override suspend fun unenrollInClass(classId: String): UnEnrollmentResponse {
+        return try {
+            apiService.unenrollInClass(classId)
+        } catch (e: ClientRequestException) {
+            if (e.response.status == HttpStatusCode.Unauthorized) {
+                try {
+                    val tokenResponse = api.refreshToken()
+                    sessionManager.updateTokens(
+                        accessToken = tokenResponse.accessToken,
+                        refreshToken = tokenResponse.refreshToken
+                    )
+                    apiService.unenrollInClass(classId)
                 } catch (_: Exception) {
                     throw ApiException("Authentication failed - please login again")
                 }
