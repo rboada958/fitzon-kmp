@@ -44,3 +44,14 @@ data class AthleteProfileResponse(
     val achievements: List<AchievementDTO>,
     val stats: List<StatItem>
 )
+
+@Serializable
+data class PersonalRecordHistoryDTO(
+    val id: String,
+    val exerciseName: String,
+    val value: String,
+    val achievedAt: String,
+    val workoutId: String? = null,
+    val notes: String? = null,
+    val isNew: Boolean = false
+)

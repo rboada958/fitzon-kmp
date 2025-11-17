@@ -11,6 +11,7 @@ import com.tepuytech.fitzon.models.ClassSchedules
 import com.tepuytech.fitzon.models.Coaches
 import com.tepuytech.fitzon.models.LeaderboardEntryDTO
 import com.tepuytech.fitzon.models.PersonalRecordDTO
+import com.tepuytech.fitzon.models.PersonalRecordHistoryDTO
 import com.tepuytech.fitzon.models.PersonalRecords
 import com.tepuytech.fitzon.models.StatItem
 import com.tepuytech.fitzon.models.TodayClassDTO
@@ -28,6 +29,7 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import java.time.DayOfWeek
+import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.TextStyle
@@ -177,7 +179,10 @@ class AthleteRepository {
 
             // Estadísticas de workouts de esta semana
             val now = LocalDateTime.now()
-            val startOfWeek = now.minusDays(now.dayOfWeek.value.toLong() - 1)
+            val startOfWeek = now
+                .minusDays(now.dayOfWeek.value.toLong() - 1)
+                .toLocalDate()
+                .atStartOfDay()
 
             val logsThisWeek = WorkoutLogs.selectAll()
                 .where {
@@ -204,7 +209,7 @@ class AthleteRepository {
                 .limit(3)
                 .map {
                     val achievedAt = it[PersonalRecords.achievedAt]
-                    val daysAgo = java.time.Duration.between(achievedAt, LocalDateTime.now()).toDays()
+                    val daysAgo = Duration.between(achievedAt, LocalDateTime.now()).toDays()
 
                     PersonalRecordDTO(
                         exerciseName = it[PersonalRecords.exerciseName],
@@ -347,7 +352,9 @@ class AthleteRepository {
             1 -> "Mañana"
             else -> {
                 val targetDate = today.plusDays(daysUntil.toLong())
-                "${targetDay.getDisplayName(TextStyle.FULL, Locale("es"))} ${targetDate.dayOfMonth} ${targetDate.month.getDisplayName(TextStyle.SHORT, Locale("es"))}"
+                val dayName = targetDay.getDisplayName(TextStyle.FULL, Locale("es"))
+                    .replaceFirstChar { it.uppercase() }
+                "$dayName ${targetDate.dayOfMonth} ${targetDate.month.getDisplayName(TextStyle.SHORT, Locale("es"))}"
             }
         }
     }
@@ -548,8 +555,47 @@ class AthleteRepository {
             if (!isPM && hours == 12) hours = 0
 
             hours * 60 + minutes
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             0
+        }
+    }
+
+    fun getPersonalRecordsHistory(userId: String): List<PersonalRecordHistoryDTO>? = transaction {
+        try {
+            val userUuid = UUID.fromString(userId)
+
+            // Obtener athleteId
+            val athlete = Athletes
+                .selectAll()
+                .where { Athletes.userId eq userUuid }
+                .singleOrNull() ?: return@transaction null
+
+            val athleteId = athlete[Athletes.id]
+
+            // Obtener todos los PRs ordenados por fecha
+            PersonalRecords
+                .selectAll()
+                .where { PersonalRecords.athleteId eq athleteId }
+                .orderBy(PersonalRecords.achievedAt to SortOrder.DESC)
+                .map { pr ->
+                    val achievedAt = pr[PersonalRecords.achievedAt]
+                    val daysAgo = Duration.between(achievedAt, LocalDateTime.now()).toDays()
+
+                    PersonalRecordHistoryDTO(
+                        id = pr[PersonalRecords.id].toString(),
+                        exerciseName = pr[PersonalRecords.exerciseName],
+                        value = "${pr[PersonalRecords.value]} ${pr[PersonalRecords.unit]}",
+                        achievedAt = achievedAt.toString(),
+                        workoutId = "",
+                        notes = "",
+                        isNew = daysAgo < 7
+                    )
+                }
+
+        } catch (e: Exception) {
+            println("Error getting personal records history: ${e.message}")
+            e.printStackTrace()
+            null
         }
     }
 }

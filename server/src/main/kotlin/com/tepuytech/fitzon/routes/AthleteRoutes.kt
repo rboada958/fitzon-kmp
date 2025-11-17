@@ -130,6 +130,25 @@ fun Route.athleteRoutes(repo: AthleteRepository) {
                     call.respond(HttpStatusCode.OK, athlete)
                 }
             }
+
+            // GET /api/athletes/personal-records/history
+            get("/personal-records/history") {
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("id")?.asString()
+
+                if (userId.isNullOrEmpty()) {
+                    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                    return@get
+                }
+
+                val records = repo.getPersonalRecordsHistory(userId)
+
+                if (records != null) {
+                    call.respond(HttpStatusCode.OK, records)
+                } else {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Failed to get personal records history"))
+                }
+            }
         }
     }
 }
