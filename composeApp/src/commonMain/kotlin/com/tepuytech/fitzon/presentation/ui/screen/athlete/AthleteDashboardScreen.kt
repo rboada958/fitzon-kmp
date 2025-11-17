@@ -81,7 +81,9 @@ class AthleteDashboard : Screen {
                     onViewAvailableClasses = {
                         navigator.push(AvailableClasses())
                     },
-                    onPersonalRecordsClick = {},
+                    onPersonalRecordsClick = {
+                        navigator.push(PersonalRecords())
+                    },
                     onLeaderboardClick = {}
                 )
             }
