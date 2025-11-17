@@ -113,7 +113,31 @@ fun AthleteDashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { },
+                title = {
+                    Column {
+                        dashboard.userName?.let {
+                            val name = it.split(" ").first()
+                            Text(
+                                text = "¡Hola, $name! 💪",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+
+                        dashboard.streakDays?.let { streakDays ->
+                            if (streakDays > 0) {
+                                val label = if (streakDays == 1) "día" else "días"
+                                Text(
+                                    text = "🔥 $streakDays $label consecutivos",
+                                    fontSize = 12.sp,
+                                    color = greenLight,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                },
                 actions = {
                     IconButton(onClick = onNotificationClick) {
                         Box {
@@ -176,44 +200,6 @@ fun AthleteDashboardScreen(
                     .padding(horizontal = 20.dp)
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
-
-                AnimatedVisibility(
-                    visible = visible,
-                    enter = fadeIn() + slideInVertically()
-                ) {
-                    Column {
-                        dashboard.userName?.let {
-                            val name = it.split(" ").first()
-                            Text(
-                                text = "¡Hola, $name! 💪",
-                                fontSize = 32.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        dashboard.streakDays?.let { streakDays ->
-                            if (streakDays > 0) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("🔥", fontSize = 24.sp)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    val label =
-                                        if (streakDays == 1) "día consecutivo" else "días consecutivos"
-                                    Text(
-                                        text = "$streakDays $label entrenando",
-                                        fontSize = 16.sp,
-                                        color = greenLight,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
 
                 AnimatedVisibility(
                     visible = visible,
@@ -553,6 +539,89 @@ fun TodayClassCard(
 ) {
     val workout = classItem.workout
 
+    if (workout?.isCompleted == true) {
+        CompletedClassCard(classItem = classItem)
+    } else {
+        FullTodayClassCard(
+            classItem = classItem,
+            onWorkoutClick = onWorkoutClick
+        )
+    }
+}
+
+@Composable
+fun CompletedClassCard(
+    classItem: TodayClass
+) {
+    val workout = classItem.workout
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = cardBackground
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = classItem.className,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = greenPrimary.copy(alpha = 0.2f)
+                    ) {
+                        Text(
+                            text = "✓ COMPLETADO",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = greenPrimary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "⏰ ${classItem.startTime} - ${classItem.endTime}",
+                    fontSize = 13.sp,
+                    color = textGray
+                )
+
+                workout?.let {
+                    Text(
+                        text = "🏋️ ${it.title}",
+                        fontSize = 12.sp,
+                        color = greenLight,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FullTodayClassCard(
+    classItem: TodayClass,
+    onWorkoutClick: (String) -> Unit
+) {
+    val workout = classItem.workout
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -627,7 +696,7 @@ fun TodayClassCard(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = workout.title,  // ← Ahora usa la variable local
+                            text = workout.title,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF081C15)
@@ -639,42 +708,25 @@ fun TodayClassCard(
                             color = Color(0xFF081C15).copy(alpha = 0.7f)
                         )
                     }
-
-                    if (workout.isCompleted) {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = Color(0xFF081C15).copy(alpha = 0.2f)
-                        ) {
-                            Text(
-                                text = "✓ Completado",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF081C15),
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
-                        }
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                if (!workout.isCompleted) {
-                    Button(
-                        onClick = { onWorkoutClick(workout.id) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF081C15)
-                        )
-                    ) {
-                        Text(
-                            "Empezar Workout",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = greenLight,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
-                    }
+                Button(
+                    onClick = { onWorkoutClick(workout.id) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF081C15)
+                    )
+                ) {
+                    Text(
+                        "Empezar Workout",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = greenLight,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
                 }
             } else {
                 Spacer(modifier = Modifier.height(12.dp))

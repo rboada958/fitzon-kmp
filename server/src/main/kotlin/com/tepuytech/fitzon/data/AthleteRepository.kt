@@ -283,6 +283,7 @@ class AthleteRepository {
                         status = "upcoming"
                     )
                 }
+                .sortedBy { parseTime(it.startTime) }
 
             val upcomingClasses = (ClassEnrollments innerJoin ClassSchedules)
                 .innerJoin(Coaches)
@@ -382,7 +383,10 @@ class AthleteRepository {
 
     private fun calculateLeaderboard(boxId: UUID, currentAthleteId: UUID): List<LeaderboardEntryDTO> {
         val now = LocalDateTime.now()
-        val startOfWeek = now.minusDays(now.dayOfWeek.value.toLong() - 1)
+        val startOfWeek = now
+            .minusDays(now.dayOfWeek.value.toLong() - 1)
+            .toLocalDate()
+            .atStartOfDay()
 
         val athletePoints = Athletes.selectAll()
             .where { Athletes.boxId eq boxId }
