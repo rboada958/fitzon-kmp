@@ -6,6 +6,6 @@ data class Workout(
     val id: String,
     val title: String,
     val difficulty: String,
-    val duration: Long,
+    val duration: Int,
     val isCompleted: Boolean,
 )

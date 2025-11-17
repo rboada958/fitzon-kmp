@@ -305,6 +305,23 @@ class AthleteRepository {
                     )
                 }
 
+            val dayOrder = mapOf(
+                "MONDAY" to 1,
+                "TUESDAY" to 2,
+                "WEDNESDAY" to 3,
+                "THURSDAY" to 4,
+                "FRIDAY" to 5,
+                "SATURDAY" to 6,
+                "SUNDAY" to 7
+            )
+
+            val sortedClasses = upcomingClasses.sortedWith(
+                compareBy(
+                    { dayOrder[it.dayOfWeek] ?: 8 },  // Order por día
+                    { parseTime(it.startTime) }  // Por hora
+                )
+            )
+
             AthleteDashboardResponse(
                 userName = user[Users.name] ?: "Atleta",
                 streakDays = streakDays,
@@ -313,7 +330,7 @@ class AthleteRepository {
                 leaderboard = leaderboard,
                 todayClasses = todayClasses,
                 hasWorkoutToday = todayClasses.any { it.workout != null },
-                upcomingClasses = upcomingClasses
+                upcomingClasses = sortedClasses
             )
         } catch (e: Exception) {
             println("Error getting athlete dashboard: ${e.message}")
@@ -518,5 +535,21 @@ class AthleteRepository {
             "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
         )
         return "${months[date.monthValue - 1]} ${date.year}"
+    }
+
+    private fun parseTime(time: String): Int {
+        return try {
+            val parts = time.split(":")
+            var hours = parts[0].toInt()
+            val minutes = parts[1].take(2).toInt()
+            val isPM = time.contains("PM", ignoreCase = true)
+
+            if (isPM && hours != 12) hours += 12
+            if (!isPM && hours == 12) hours = 0
+
+            hours * 60 + minutes
+        } catch (e: Exception) {
+            0
+        }
     }
 }

@@ -4,9 +4,12 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.tepuytech.fitzon.domain.model.classes.ClassResult
 import com.tepuytech.fitzon.domain.model.classes.CreateClassRequest
+import com.tepuytech.fitzon.domain.usecase.AvailableClassesUseCase
 import com.tepuytech.fitzon.domain.usecase.ClassesUseCase
 import com.tepuytech.fitzon.domain.usecase.CreateClassUseCase
 import com.tepuytech.fitzon.domain.usecase.DeleteClassUseCase
+import com.tepuytech.fitzon.domain.usecase.EnrollClassUseCase
+import com.tepuytech.fitzon.domain.usecase.UnEnrollClassUseCase
 import com.tepuytech.fitzon.presentation.state.ClassUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,11 +18,20 @@ import kotlinx.coroutines.launch
 class ClassViewModel (
     private val createClassUseCase: CreateClassUseCase,
     private val classesUseCase: ClassesUseCase,
-    private val deleteClassUseCase: DeleteClassUseCase
+    private val deleteClassUseCase: DeleteClassUseCase,
+    private val availableClassesUseCase: AvailableClassesUseCase,
+    private val enrollClassUseCase: EnrollClassUseCase,
+    private val unenrollClassUseCase: UnEnrollClassUseCase,
 ) : ScreenModel {
 
     private val _uiState = MutableStateFlow<ClassUiState>(ClassUiState.Idle)
     val uiState: StateFlow<ClassUiState> = _uiState
+
+    private val _availableClassesState = MutableStateFlow<ClassUiState>(ClassUiState.Idle)
+    val availableClassesState: StateFlow<ClassUiState> = _availableClassesState
+
+    private val _enrollmentState = MutableStateFlow<ClassUiState>(ClassUiState.Idle)
+    val enrollmentState: StateFlow<ClassUiState> = _enrollmentState
 
     fun createClass(request: CreateClassRequest) {
         screenModelScope.launch {
@@ -51,13 +63,7 @@ class ClassViewModel (
             try {
                 when (val result = classesUseCase(boxId)) {
                     is ClassResult.Success -> {
-                        val sortedClasses = result.classes.sortedWith(
-                            compareBy(
-                                { dayOrder[it.dayOfWeek] ?: 8 },
-                                { parseTime(it.time) }
-                            )
-                        )
-                        _uiState.value = ClassUiState.Success(sortedClasses)
+                        _uiState.value = ClassUiState.Success(result.classes)
                     }
 
                     is ClassResult.Error -> {
@@ -99,36 +105,68 @@ class ClassViewModel (
         }
     }
 
+    fun loadAvailableClasses() {
+        screenModelScope.launch {
+            _availableClassesState.value = ClassUiState.Loading
+            try {
+                when (val result = availableClassesUseCase()) {
+                    is ClassResult.AvailableClassesLoaded -> {
+                        _availableClassesState.value = ClassUiState.AvailableClassesLoaded(result.classes)
+                    }
 
-    companion object {
-        private val dayOrder = mapOf(
-            "MONDAY" to 1,
-            "TUESDAY" to 2,
-            "WEDNESDAY" to 3,
-            "THURSDAY" to 4,
-            "FRIDAY" to 5,
-            "SATURDAY" to 6,
-            "SUNDAY" to 7
-        )
+                    is ClassResult.Error -> {
+                        _availableClassesState.value = ClassUiState.Error(result.message)
+                    }
+                    is ClassResult.Empty -> {
+                        _availableClassesState.value = ClassUiState.Empty(result.message)
+                    }
 
-        private fun parseTime(time: String): Int {
-            return try {
-                val parts = time.split(":")
-                var hour = parts[0].trim().toInt()
-                val isPM = time.contains("PM", ignoreCase = true)
-
-                if (isPM && hour != 12) {
-                    hour += 12
-                } else if (!isPM && hour == 12) {
-                    hour = 0
+                    else -> {}
                 }
-
-                val minute = parts[1].replace(Regex("[^0-9]"), "").toInt()
-                
-                hour * 60 + minute
             } catch (e: Exception) {
-                println("Error parsing time: $time - ${e.message}")
-                0
+                _availableClassesState.value = ClassUiState.Error(e.message ?: "Unknown error")
+            }
+        }
+    }
+
+    fun enrollInClass(classId: String) {
+        screenModelScope.launch {
+            _enrollmentState.value = ClassUiState.EnrollmentLoading(classId)
+            try {
+                when (val result = enrollClassUseCase(classId)) {
+                    is ClassResult.EnrollmentSuccess -> {
+                        _enrollmentState.value = ClassUiState.EnrollmentSuccess(result.response)
+                    }
+
+                    is ClassResult.Error -> {
+                        _enrollmentState.value = ClassUiState.Error(result.message)
+                    }
+
+                    else -> {}
+                }
+            } catch (e: Exception) {
+                _enrollmentState.value = ClassUiState.Error(e.message ?: "Unknown error")
+            }
+        }
+    }
+
+    fun unenrollFromClass(classId: String) {
+        screenModelScope.launch {
+            _enrollmentState.value = ClassUiState.EnrollmentLoading(classId)
+            try {
+                when (val result = unenrollClassUseCase(classId)) {
+                    is ClassResult.UnenrollmentSuccess -> {
+                        _enrollmentState.value = ClassUiState.UnenrollmentSuccess(result.response)
+                    }
+
+                    is ClassResult.Error -> {
+                        _enrollmentState.value = ClassUiState.Error(result.message)
+                    }
+
+                    else -> {}
+                }
+            } catch (e: Exception) {
+                _enrollmentState.value = ClassUiState.Error(e.message ?: "Unknown error")
             }
         }
     }

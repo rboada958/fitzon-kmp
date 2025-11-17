@@ -79,8 +79,7 @@ class AthleteDashboard : Screen {
                         navigator.push(WorkoutOfTheDay(workoutId))
                     },
                     onViewAvailableClasses = {
-                        // Navegar a clases disponibles
-                        // navigator.push(AvailableClasses())
+                        navigator.push(AvailableClasses())
                     },
                     onPersonalRecordsClick = {},
                     onLeaderboardClick = {}
@@ -298,9 +297,6 @@ fun AthleteDashboardScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // ============================================
-                // PRÓXIMAS CLASES
-                // ============================================
                 if (dashboard.upcomingClasses.isNotEmpty()) {
                     AnimatedVisibility(
                         visible = visible,
@@ -345,9 +341,6 @@ fun AthleteDashboardScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                 }
 
-                // ============================================
-                // ESTA SEMANA (Stats)
-                // ============================================
                 dashboard.workoutStats?.let {
                     AnimatedVisibility(
                         visible = visible,
@@ -434,9 +427,6 @@ fun AthleteDashboardScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // ============================================
-                // PERSONAL RECORDS
-                // ============================================
                 dashboard.personalRecords?.let { personalRecords ->
                     if (personalRecords.isNotEmpty()) {
                         AnimatedVisibility(
@@ -488,9 +478,6 @@ fun AthleteDashboardScreen(
                     }
                 }
 
-                // ============================================
-                // LEADERBOARD
-                // ============================================
                 AnimatedVisibility(
                     visible = visible,
                     enter = fadeIn() + slideInVertically(
@@ -559,10 +546,15 @@ fun AthleteDashboardScreen(
 
 @Composable
 fun TodayClassCard(
-    classItem: TodayClass, onWorkoutClick: (String) -> Unit
+    classItem: TodayClass,
+    onWorkoutClick: (String) -> Unit
 ) {
+    val workout = classItem.workout
+
     Surface(
-        modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), color = greenPrimary
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = if (workout != null) greenPrimary else cardBackground
     ) {
         Column(
             modifier = Modifier.padding(20.dp)
@@ -577,23 +569,30 @@ fun TodayClassCard(
                         text = classItem.className,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF081C15)
+                        color = if (workout != null) Color(0xFF081C15) else Color.White
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "👨‍🏫 ${classItem.coachName}",
                         fontSize = 14.sp,
-                        color = Color(0xFF081C15).copy(alpha = 0.7f)
+                        color = if (workout != null)
+                            Color(0xFF081C15).copy(alpha = 0.7f)
+                        else textGray
                     )
                     Text(
                         text = "⏰ ${classItem.startTime} - ${classItem.endTime}",
                         fontSize = 14.sp,
-                        color = Color(0xFF081C15).copy(alpha = 0.7f)
+                        color = if (workout != null)
+                            Color(0xFF081C15).copy(alpha = 0.7f)
+                        else textGray
                     )
                 }
 
                 Surface(
-                    shape = CircleShape, color = Color(0xFF081C15).copy(alpha = 0.2f)
+                    shape = CircleShape,
+                    color = if (workout != null)
+                        Color(0xFF081C15).copy(alpha = 0.2f)
+                    else greenPrimary.copy(alpha = 0.2f)
                 ) {
                     Box(modifier = Modifier.padding(12.dp)) {
                         Text("🏋️", fontSize = 28.sp)
@@ -601,77 +600,101 @@ fun TodayClassCard(
                 }
             }
 
+            if (workout != null) {
+                Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(
+                    color = Color(0xFF081C15).copy(alpha = 0.2f),
+                    thickness = 1.dp
+                )
 
-            HorizontalDivider(
-                color = Color(0xFF081C15).copy(alpha = 0.2f), thickness = 1.dp
-            )
+                Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "WORKOUT",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF081C15).copy(alpha = 0.5f),
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = workout.title,  // ← Ahora usa la variable local
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF081C15)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "${workout.duration} min • ${workout.difficulty}",
+                            fontSize = 13.sp,
+                            color = Color(0xFF081C15).copy(alpha = 0.7f)
+                        )
+                    }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "WORKOUT",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF081C15).copy(alpha = 0.5f),
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = classItem.workout.title,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF081C15)
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "${classItem.workout.duration} min • ${classItem.workout.difficulty}",
-                        fontSize = 13.sp,
-                        color = Color(0xFF081C15).copy(alpha = 0.7f)
-                    )
+                    if (workout.isCompleted) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFF081C15).copy(alpha = 0.2f)
+                        ) {
+                            Text(
+                                text = "✓ Completado",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF081C15),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
                 }
 
-                if (classItem.workout.isCompleted) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFF081C15).copy(alpha = 0.2f)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                if (!workout.isCompleted) {
+                    Button(
+                        onClick = { onWorkoutClick(workout.id) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF081C15)
+                        )
                     ) {
                         Text(
-                            text = "✓ Completado",
-                            fontSize = 12.sp,
+                            "Empezar Workout",
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF081C15),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            color = greenLight,
+                            modifier = Modifier.padding(vertical = 4.dp)
                         )
                     }
                 }
-            }
+            } else {
+                Spacer(modifier = Modifier.height(12.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (!classItem.workout.isCompleted) {
-                Button(
-                    onClick = { onWorkoutClick(classItem.workout.id) },
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF081C15)
-                    )
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color(0xFF1B4332).copy(alpha = 0.5f)
                 ) {
-                    Text(
-                        "Empezar Workout",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = greenLight,
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("⏳", fontSize = 20.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Workout aún no asignado",
+                            fontSize = 14.sp,
+                            color = textGray,
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                        )
+                    }
                 }
             }
         }

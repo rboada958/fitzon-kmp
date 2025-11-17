@@ -40,6 +40,7 @@
       <w>cancelada</w>
       <w>cancelar</w>
       <w>capacidad</w>
+      <w>cargar</w>
       <w>centenario</w>
       <w>cerrar</w>
       <w>certificaciones</w>
@@ -136,11 +137,14 @@
       <w>ingreso</w>
       <w>iniciar</w>
       <w>inicio</w>
+      <w>inscribirse</w>
+      <w>inscripción</w>
       <w>inscritas</w>
       <w>inscrito</w>
       <w>inscritos</w>
       <w>inscríbete</w>
       <w>instalaciones</w>
+      <w>intenta</w>
       <w>intermedio</w>
       <w>inválido</w>
       <w>jueves</w>
@@ -175,6 +179,7 @@
       <w>octubre</w>
       <w>olvidaste</w>
       <w>ordenados</w>
+      <w>otro</w>
       <w>otros</w>
       <w>parcialmente</w>
       <w>pendiente</w>
