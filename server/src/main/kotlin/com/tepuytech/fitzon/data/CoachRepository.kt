@@ -35,8 +35,6 @@ class CoachRepository {
 
                     // Contar clases actuales del coach esta semana
                     val coachId = row[Coaches.id]
-                    val now = LocalDateTime.now()
-                    val startOfWeek = now.minusDays(now.dayOfWeek.value.toLong() - 1)
 
                     val currentClasses = ClassSchedules.selectAll()
                         .where {
@@ -51,7 +49,7 @@ class CoachRepository {
                         userId = row[Coaches.userId].toString(),
                         name = row[Users.name] ?: "Coach",
                         email = row[Users.email],
-                        phone = row[Users.profileImageUrl], // Puedes agregar phone a Users si quieres
+                        phone = row[Users.profileImageUrl], // Modify to get phone from Users table
                         specialties = specialties,
                         certifications = certifications,
                         status = row[Coaches.status],

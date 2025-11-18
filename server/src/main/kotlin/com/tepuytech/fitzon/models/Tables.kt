@@ -69,22 +69,6 @@ object Coaches : Table("coaches") {
     override val primaryKey = PrimaryKey(id)
 }
 
-object Classes : Table("classes") {
-    val id = uuid("id").autoGenerate()
-    val boxId = uuid("box_id").references(Boxes.id)
-    val coachId = uuid("coach_id").references(Coaches.id)
-    val name = varchar("name", 255)
-    val description = varchar("description", 500).nullable()
-    val startTime = varchar("start_time", 10)
-    val endTime = varchar("end_time", 10)
-    val dayOfWeek = varchar("day_of_week", 10)
-    val maxCapacity = integer("max_capacity")
-    val level = varchar("level", 50).default("BEGINNER")
-    val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)
-
-    override val primaryKey = PrimaryKey(id)
-}
-
 object ClassEnrollments : Table("class_enrollments") {
     val id = uuid("id").autoGenerate()
     val classId = uuid("class_id").references(ClassSchedules.id)
@@ -99,7 +83,6 @@ object ClassEnrollments : Table("class_enrollments") {
 
 object Workouts : Table("workouts") {
     val id = uuid("id").autoGenerate()
-    val classId = uuid("class_id").references(Classes.id).nullable()
     val boxId = uuid("box_id").references(Boxes.id)
     val title = varchar("title", 255)
     val description = varchar("description", 1000).nullable()
@@ -156,18 +139,6 @@ object PersonalRecords : Table("personal_records") {
     val value = varchar("value", 100)
     val unit = varchar("unit", 50)
     val achievedAt = datetime("achieved_at").defaultExpression(CurrentDateTime)
-
-    override val primaryKey = PrimaryKey(id)
-}
-
-object Achievements : Table("achievements") {
-    val id = uuid("id")
-    val athleteId = uuid("athlete_id").references(Athletes.id)
-    val icon = varchar("icon", 10)
-    val name = varchar("name", 255)
-    val description = varchar("description", 500)
-    val isUnlocked = bool("is_unlocked").default(false)
-    val unlockedAt = datetime("unlocked_at").nullable()
 
     override val primaryKey = PrimaryKey(id)
 }

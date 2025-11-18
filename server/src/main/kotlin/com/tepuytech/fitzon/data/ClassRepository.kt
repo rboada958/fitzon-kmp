@@ -273,15 +273,6 @@ class ClassRepository {
 
             val athleteId = athlete[Athletes.id]
 
-            // Verificar que está inscrito
-            val enrollment = ClassEnrollments
-                .selectAll()
-                .where {
-                    (ClassEnrollments.classId eq classUuid) and
-                            (ClassEnrollments.athleteId eq athleteId)
-                }
-                .singleOrNull() ?: return@transaction false
-
             // Eliminar inscription
             ClassEnrollments.deleteWhere {
                 (ClassEnrollments.classId eq classUuid) and
@@ -304,7 +295,7 @@ class ClassRepository {
         }
     }
 
-    fun getMyClasses(userId: String, filter: String = "all"): MyClassesResponse? = transaction {
+    fun getMyClasses(userId: String): MyClassesResponse? = transaction {
         try {
             val userUuid = UUID.fromString(userId)
 
@@ -327,7 +318,6 @@ class ClassRepository {
                             (Users.id eq Coaches.userId)
                 }
                 .map { row ->
-                    val classId = row[ClassSchedules.id].toString()
                     val dayOfWeek = row[ClassSchedules.dayOfWeek]
                     val workoutId = row[ClassSchedules.workoutId]
 
@@ -513,7 +503,8 @@ class ClassRepository {
             1 -> "Mañana"
             else -> {
                 val targetDate = today.plusDays(daysUntil.toLong())
-                "${targetDay.getDisplayName(TextStyle.FULL, Locale("es"))} ${targetDate.dayOfMonth} ${targetDate.month.getDisplayName(TextStyle.SHORT, Locale("es"))}"
+                val locale = Locale.forLanguageTag("es")
+                "${targetDay.getDisplayName(TextStyle.FULL, locale)} ${targetDate.dayOfMonth} ${targetDate.month.getDisplayName(TextStyle.SHORT, locale)}"
             }
         }
     }
@@ -529,7 +520,7 @@ class ClassRepository {
             if (!isPM && hours == 12) hours = 0
 
             hours * 60 + minutes
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             0
         }
     }

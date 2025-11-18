@@ -40,7 +40,7 @@ class MemberRepository {
                         userId = userId.toString(),
                         name = row[Users.name] ?: "Atleta",
                         email = row[Users.email],
-                        phone = null, // Puedes agregar phone a Users si quieres
+                        phone = null, // Modify to get phone from Users table
                         membershipType = row[Athletes.membershipType],
                         status = row[Athletes.status],
                         joinedAt = formatJoinedAt(row[Athletes.joinedAt]),
@@ -72,14 +72,6 @@ class MemberRepository {
                 .singleOrNull() ?: return@transaction null
 
             val boxId = box[Boxes.id]
-
-            // Verificar que el miembro pertenece al box
-            val member = Athletes.selectAll()
-                .where {
-                    (Athletes.id eq memberUuid) and
-                            (Athletes.boxId eq boxId)
-                }
-                .singleOrNull() ?: return@transaction null
 
             // Actualizar miembro
             Athletes.update({ Athletes.id eq memberUuid }) {

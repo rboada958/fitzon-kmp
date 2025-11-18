@@ -5,9 +5,12 @@
       <w>aceptar</w>
       <w>aceptas</w>
       <w>acerca</w>
+      <w>acondicionado</w>
       <w>activa</w>
+      <w>actividad</w>
       <w>activo</w>
       <w>activos</w>
+      <w>actuales</w>
       <w>actualizado</w>
       <w>actualizar</w>
       <w>adicional</w>
@@ -22,6 +25,7 @@
       <w>aplicados</w>
       <w>aprobar</w>
       <w>aquí</w>
+      <w>archivo</w>
       <w>asignado</w>
       <w>asignar</w>
       <w>atleta</w>
@@ -41,6 +45,7 @@
       <w>cancelar</w>
       <w>capacidad</w>
       <w>cargar</w>
+      <w>casilleros</w>
       <w>centenario</w>
       <w>cerrar</w>
       <w>certificaciones</w>
@@ -103,11 +108,13 @@
       <w>entrenando</w>
       <w>entrenar</w>
       <w>enviar</w>
+      <w>equipamiento</w>
       <w>esfuerzo</w>
       <w>especializaciones</w>
       <w>específicos</w>
       <w>establecer</w>
       <w>establecidos</w>
+      <w>estacionamiento</w>
       <w>estadísticas</w>
       <w>estás</w>
       <w>excelente</w>
@@ -124,6 +131,7 @@
       <w>fuerza</w>
       <w>fundación</w>
       <w>físicos</w>
+      <w>generar</w>
       <w>gestionar</w>
       <w>guardados</w>
       <w>guardar</w>
@@ -165,8 +173,10 @@
       <w>mejor</w>
       <w>membresía</w>
       <w>menos</w>
+      <w>meses</w>
       <w>miembro</w>
       <w>miembros</w>
+      <w>migrar</w>
       <w>minutos</w>
       <w>miércoles</w>
       <w>navegar</w>
@@ -207,6 +217,7 @@
       <w>reactivar</w>
       <w>reciente</w>
       <w>recordar</w>
+      <w>regaderas</w>
       <w>registra</w>
       <w>registrarse</w>
       <w>registrarte</w>

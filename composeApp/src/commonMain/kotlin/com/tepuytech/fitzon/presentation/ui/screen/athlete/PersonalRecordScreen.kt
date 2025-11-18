@@ -1,16 +1,42 @@
 package com.tepuytech.fitzon.presentation.ui.screen.athlete
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,24 +45,69 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.tepuytech.fitzon.presentation.ui.composable.*
+import com.tepuytech.fitzon.domain.model.athletes.PersonalRecordsResponse
+import com.tepuytech.fitzon.presentation.state.AthleteUiState
+import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
+import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
+import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
+import com.tepuytech.fitzon.presentation.ui.composable.greenLight
+import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
+import com.tepuytech.fitzon.presentation.ui.composable.textGray
+import com.tepuytech.fitzon.presentation.viewmodel.AthleteViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 class PersonalRecords : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        PersonalRecordScreen(
-            onBackClick = { navigator.pop() }
-        )
+        val viewModel = getScreenModel<AthleteViewModel>()
+        val uiState by viewModel.uiState.collectAsState()
+
+        LaunchedEffect(Unit) {
+            viewModel.getPersonalRecords()
+        }
+
+        when (val state = uiState) {
+            is AthleteUiState.Loading -> {
+                AthleteDashboardShimmer()
+            }
+
+            is AthleteUiState.Error -> {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(brush = backgroundGradient),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Error: ${state.message}", color = Color.Red)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { viewModel.athleteDashboard() }) {
+                            Text("Reintentar")
+                        }
+                    }
+                }
+            }
+
+            is AthleteUiState.PersonalRecordsSuccess -> {
+                PersonalRecordScreen(
+                    personalRecords = state.data,
+                    onBackClick = { navigator.pop() }
+                )
+            }
+
+            else -> {}
+        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PersonalRecordScreen(
+    personalRecords: List<PersonalRecordsResponse> = emptyList(),
     onBackClick: () -> Unit = {}
 ) {
     var visible by remember { mutableStateOf(false) }
@@ -44,114 +115,6 @@ fun PersonalRecordScreen(
     LaunchedEffect(Unit) {
         visible = true
     }
-
-    val mockRecords = listOf(
-        PersonalRecordMock(
-            id = "1",
-            exerciseName = "Run",
-            value = "2000 reps",
-            achievedAt = "16 Nov 2024",
-            isNew = true
-        ),
-        PersonalRecordMock(
-            id = "2",
-            exerciseName = "Air_Squats",
-            value = "300 reps",
-            achievedAt = "07 Nov 2024",
-            isNew = false
-        ),
-        PersonalRecordMock(
-            id = "3",
-            exerciseName = "Air_Squats",
-            value = "250 reps",
-            achievedAt = "01 Nov 2024",
-            isNew = false
-        ),
-        PersonalRecordMock(
-            id = "4",
-            exerciseName = "Push_ups",
-            value = "200 reps",
-            achievedAt = "07 Nov 2024",
-            isNew = false
-        ),
-        PersonalRecordMock(
-            id = "5",
-            exerciseName = "Push_ups",
-            value = "180 reps",
-            achievedAt = "30 Oct 2024",
-            isNew = false
-        ),
-        PersonalRecordMock(
-            id = "6",
-            exerciseName = "Pull_ups",
-            value = "100 reps",
-            achievedAt = "07 Nov 2024",
-            isNew = false
-        ),
-        PersonalRecordMock(
-            id = "7",
-            exerciseName = "Pull_ups",
-            value = "85 reps",
-            achievedAt = "25 Oct 2024",
-            isNew = false
-        ),
-        PersonalRecordMock(
-            id = "8",
-            exerciseName = "Power_Snatch",
-            value = "120 kg",
-            achievedAt = "29 Oct 2024",
-            isNew = false
-        ),
-        PersonalRecordMock(
-            id = "9",
-            exerciseName = "Power_Snatch",
-            value = "115 kg",
-            achievedAt = "20 Oct 2024",
-            isNew = false
-        ),
-        PersonalRecordMock(
-            id = "10",
-            exerciseName = "Back_Squat",
-            value = "150 kg",
-            achievedAt = "29 Oct 2024",
-            isNew = false
-        ),
-        PersonalRecordMock(
-            id = "11",
-            exerciseName = "Back_Squat",
-            value = "145 kg",
-            achievedAt = "22 Oct 2024",
-            isNew = false
-        ),
-        PersonalRecordMock(
-            id = "12",
-            exerciseName = "Back_Squat",
-            value = "140 kg",
-            achievedAt = "15 Oct 2024",
-            isNew = false
-        ),
-        PersonalRecordMock(
-            id = "13",
-            exerciseName = "Deadlift",
-            value = "200 kg",
-            achievedAt = "12 Nov 2024",
-            isNew = true
-        ),
-        PersonalRecordMock(
-            id = "14",
-            exerciseName = "Deadlift",
-            value = "195 kg",
-            achievedAt = "05 Nov 2024",
-            isNew = false
-        ),
-        PersonalRecordMock(
-            id = "15",
-            exerciseName = "Box_Jump",
-            value = "75 cm",
-            achievedAt = "10 Nov 2024",
-            isNew = true
-        )
-    )
 
     Scaffold(
         topBar = {
@@ -186,7 +149,7 @@ fun PersonalRecordScreen(
                 .background(brush = backgroundGradient)
                 .padding(paddingValues)
         ) {
-            if (mockRecords.isEmpty()) {
+            if (personalRecords.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -225,8 +188,9 @@ fun PersonalRecordScreen(
                         contentPadding = PaddingValues(20.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-
-                        val groupedRecords = mockRecords.groupBy { it.exerciseName }
+                        val groupedRecords = personalRecords.groupBy {
+                            normalizeExerciseName(it.exerciseName)
+                        }
 
                         groupedRecords.forEach { (exerciseName, records) ->
                             item {
@@ -254,17 +218,9 @@ fun PersonalRecordScreen(
     }
 }
 
-data class PersonalRecordMock(
-    val id: String,
-    val exerciseName: String,
-    val value: String,
-    val achievedAt: String,
-    val isNew: Boolean = false
-)
-
 @Composable
 fun PersonalRecordDetailCard(
-    record: PersonalRecordMock
+    record: PersonalRecordsResponse
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -283,7 +239,7 @@ fun PersonalRecordDetailCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = record.achievedAt,
+                        text = formatDate(record.achievedAt),
                         fontSize = 12.sp,
                         color = textGray
                     )
@@ -331,6 +287,12 @@ fun PersonalRecordDetailCard(
     }
 }
 
+fun normalizeExerciseName(exerciseName: String): String {
+    return exerciseName
+        .replace("-", "_")
+        .lowercase()
+}
+
 fun formatExerciseName(exerciseName: String): String {
     return exerciseName
         .replace("_", " ")
@@ -338,6 +300,39 @@ fun formatExerciseName(exerciseName: String): String {
         .joinToString(" ") { word ->
             word.lowercase().replaceFirstChar { it.uppercase() }
         }
+}
+
+fun formatDate(dateString: String): String {
+    return try {
+        val parts = dateString.split("T")[0].split("-")
+        if (parts.size != 3) return dateString
+
+        val year = parts[0]
+        val month = parts[1].toIntOrNull() ?: return dateString
+        val day = parts[2].toIntOrNull() ?: return dateString
+
+        val monthName = when (month) {
+            1 -> "Ene"
+            2 -> "Feb"
+            3 -> "Mar"
+            4 -> "Abr"
+            5 -> "May"
+            6 -> "Jun"
+            7 -> "Jul"
+            8 -> "Ago"
+            9 -> "Sep"
+            10 -> "Oct"
+            11 -> "Nov"
+            12 -> "Dic"
+            else -> return dateString
+        }
+
+        "$day $monthName $year"
+
+    } catch (e: Exception) {
+        println("Error formatting date: ${e.message}")
+        dateString
+    }
 }
 
 @Preview

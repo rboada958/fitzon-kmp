@@ -148,9 +148,7 @@ fun Route.classRoutes(repo: ClassRepository) {
                     return@get
                 }
 
-                val filter = call.request.queryParameters["filter"] ?: "all"
-
-                val result = repo.getMyClasses(userId, filter)
+                val result = repo.getMyClasses(userId)
 
                 if (result == null) {
                     call.respond(HttpStatusCode.NotFound, ErrorResponse("Athlete not found"))

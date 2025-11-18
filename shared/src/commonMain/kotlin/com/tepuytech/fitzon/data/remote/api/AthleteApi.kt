@@ -3,6 +3,7 @@ package com.tepuytech.fitzon.data.remote.api
 import com.tepuytech.fitzon.data.local.SessionManager
 import com.tepuytech.fitzon.domain.model.athletes.AthleteDashboardResponse
 import com.tepuytech.fitzon.domain.model.athletes.AthleteProfileResponse
+import com.tepuytech.fitzon.domain.model.athletes.PersonalRecordsResponse
 import com.tepuytech.fitzon.domain.model.athletes.UpdateAthleteProfileRequest
 import com.tepuytech.fitzon.domain.model.athletes.UpdateAthleteProfileResponse
 import io.ktor.client.HttpClient
@@ -51,6 +52,18 @@ class AthleteApi(
         val response = httpClient.put("/api/athletes/profile") {
             header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
             setBody(UpdateAthleteProfileRequest(userId, age, weight, height))
+        }
+
+        if (response.status == HttpStatusCode.Unauthorized) {
+            throw ClientRequestException(response, "Unauthorized")
+        }
+
+        return response.body()
+    }
+
+    suspend fun personalRecords() : List<PersonalRecordsResponse> {
+        val response = httpClient.get("/api/athletes/personal-records/history") {
+            header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
         }
 
         if (response.status == HttpStatusCode.Unauthorized) {

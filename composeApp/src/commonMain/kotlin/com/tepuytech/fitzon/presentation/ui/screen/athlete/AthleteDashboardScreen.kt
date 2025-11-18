@@ -871,7 +871,7 @@ fun PersonalRecordCard(
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = record.exerciseName,
+                        text = formatExerciseName(exerciseName = normalizeExerciseName(exerciseName = record.exerciseName)),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White
