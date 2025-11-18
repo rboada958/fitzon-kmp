@@ -353,9 +353,10 @@ class AthleteRepository {
             1 -> "Mañana"
             else -> {
                 val targetDate = today.plusDays(daysUntil.toLong())
-                val dayName = targetDay.getDisplayName(TextStyle.FULL, Locale("es"))
+                val locale = Locale.forLanguageTag("es")
+                val dayName = targetDay.getDisplayName(TextStyle.FULL, locale)
                     .replaceFirstChar { it.uppercase() }
-                "$dayName ${targetDate.dayOfMonth} ${targetDate.month.getDisplayName(TextStyle.SHORT, Locale("es"))}"
+                "$dayName ${targetDate.dayOfMonth} ${targetDate.month.getDisplayName(TextStyle.SHORT, locale)}"
             }
         }
     }

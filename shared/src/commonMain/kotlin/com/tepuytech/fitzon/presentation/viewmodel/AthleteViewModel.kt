@@ -8,6 +8,7 @@ import com.tepuytech.fitzon.domain.model.athletes.UpdateAthleteProfileResult
 import com.tepuytech.fitzon.domain.usecase.AthleteDashboardUseCase
 import com.tepuytech.fitzon.domain.usecase.AthleteProfileUseCase
 import com.tepuytech.fitzon.domain.usecase.LogoutUseCase
+import com.tepuytech.fitzon.domain.usecase.PersonalRecordsUseCase
 import com.tepuytech.fitzon.domain.usecase.UpdateAthleteProfileUseCase
 import com.tepuytech.fitzon.presentation.state.AthleteUiState
 import com.tepuytech.fitzon.presentation.state.LogoutUiState
@@ -20,6 +21,7 @@ class AthleteViewModel (
     private val athleteDashboardUseCase: AthleteDashboardUseCase,
     private val athleteProfileUseCase: AthleteProfileUseCase,
     private val updateAthleteProfileUseCase: UpdateAthleteProfileUseCase,
+    private val personalRecordsUseCase: PersonalRecordsUseCase,
     private val logoutUseCase: LogoutUseCase
 ) : ScreenModel {
 
@@ -41,6 +43,7 @@ class AthleteViewModel (
                     is AthleteDashboardResult.Error -> {
                         _uiState.value = AthleteUiState.Error(result.message)
                     }
+                    else -> {}
                 }
             } catch (e: Exception) {
                 _uiState.value = AthleteUiState.Error(e.message ?: "Unknown error")
@@ -83,6 +86,26 @@ class AthleteViewModel (
                     is UpdateAthleteProfileResult.Error -> {
                         _uiState.value = AthleteUiState.Error(result.message)
                     }
+                }
+            } catch (e: Exception) {
+                _uiState.value = AthleteUiState.Error(e.message ?: "Unknown error")
+            }
+        }
+    }
+
+    fun getPersonalRecords() {
+        screenModelScope.launch {
+            _uiState.value = AthleteUiState.Loading
+            try {
+                when (val result = personalRecordsUseCase()) {
+                    is AthleteDashboardResult.PersonalRecordsSuccess -> {
+                        _uiState.value = AthleteUiState.PersonalRecordsSuccess(result.data)
+                    }
+
+                    is AthleteDashboardResult.Error -> {
+                        _uiState.value = AthleteUiState.Error(result.message)
+                    }
+                    else -> {}
                 }
             } catch (e: Exception) {
                 _uiState.value = AthleteUiState.Error(e.message ?: "Unknown error")

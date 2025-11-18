@@ -29,6 +29,7 @@ val viewModelModule = module {
             athleteDashboardUseCase = get(),
             athleteProfileUseCase = get(),
             updateAthleteProfileUseCase = get(),
+            personalRecordsUseCase = get(),
             logoutUseCase = get()
         )
     }

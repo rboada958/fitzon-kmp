@@ -20,6 +20,7 @@ import com.tepuytech.fitzon.domain.usecase.IsUserLoggedInUseCase
 import com.tepuytech.fitzon.domain.usecase.LoginUseCase
 import com.tepuytech.fitzon.domain.usecase.LogoutUseCase
 import com.tepuytech.fitzon.domain.usecase.MembersUseCase
+import com.tepuytech.fitzon.domain.usecase.PersonalRecordsUseCase
 import com.tepuytech.fitzon.domain.usecase.RegisterUseCase
 import com.tepuytech.fitzon.domain.usecase.UnEnrollClassUseCase
 import com.tepuytech.fitzon.domain.usecase.UpdateAthleteProfileUseCase
@@ -56,6 +57,11 @@ val useCaseModule = module {
     }
     factory {
         AthleteDashboardUseCase(
+            athleteRepository = get()
+        )
+    }
+    factory {
+        PersonalRecordsUseCase(
             athleteRepository = get()
         )
     }

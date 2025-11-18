@@ -36,7 +36,6 @@ class WorkoutRepository {
         dayOfWeek: String,
         duration: Int,
         difficulty: String,
-        classId: String?,
         exercises: List<CreateExerciseRequest>
     ): WorkoutResponse? = transaction {
         try {
@@ -49,25 +48,10 @@ class WorkoutRepository {
             val boxId = box[Boxes.id]
             val boxName = box[Boxes.name]
 
-            var className: String? = null
-            if (classId != null) {
-                val classSchedule = ClassSchedules.selectAll()
-                    .where {
-                        (ClassSchedules.id eq UUID.fromString(classId)) and
-                                (ClassSchedules.boxId eq boxId)
-                    }
-                    .singleOrNull()
-
-                if (classSchedule != null) {
-                    className = classSchedule[ClassSchedules.name]
-                }
-            }
-
             val workoutId = UUID.randomUUID()
             Workouts.insert {
                 it[Workouts.id] = workoutId
                 it[Workouts.boxId] = boxId
-                it[Workouts.classId] = classId?.let { id -> UUID.fromString(id) }
                 it[Workouts.title] = title
                 it[Workouts.description] = description
                 it[Workouts.date] = LocalDate.parse(date)
@@ -108,8 +92,6 @@ class WorkoutRepository {
                 id = workoutId.toString(),
                 boxId = boxId.toString(),
                 boxName = boxName,
-                classId = classId,
-                className = className,
                 title = title,
                 description = description,
                 date = date,
@@ -139,13 +121,9 @@ class WorkoutRepository {
                 .where { Boxes.id eq boxId }
                 .single()
 
-            val classId = workout[Workouts.classId]
-            val className = classId?.let {
-                ClassSchedules.selectAll()
-                    .where { ClassSchedules.id eq it }
-                    .singleOrNull()
-                    ?.get(ClassSchedules.name)
-            }
+            val classesUsingThisWorkout = ClassSchedules.selectAll()
+                .where { ClassSchedules.workoutId eq uuid }
+                .map { it[ClassSchedules.name] }
 
             val exercises = Exercises.selectAll()
                 .where { Exercises.workoutId eq uuid }
@@ -165,8 +143,7 @@ class WorkoutRepository {
                 id = uuid.toString(),
                 boxId = boxId.toString(),
                 boxName = box[Boxes.name],
-                classId = classId?.toString(),
-                className = className,
+                usedByClasses = classesUsingThisWorkout,
                 title = workout[Workouts.title],
                 description = workout[Workouts.description],
                 exercises = exercises,
@@ -186,24 +163,18 @@ class WorkoutRepository {
         try {
             val uuid = UUID.fromString(boxId)
 
+            val box = Boxes.selectAll()
+                .where { Boxes.id eq uuid }
+                .singleOrNull() ?: return@transaction emptyList()
+
+            val boxName = box[Boxes.name]
+
             Workouts.selectAll()
                 .where { Workouts.boxId eq uuid }
                 .orderBy(Workouts.date to SortOrder.DESC)
                 .limit(limit)
                 .map { workout ->
                     val workoutId = workout[Workouts.id]
-
-                    val box = Boxes.selectAll()
-                        .where { Boxes.id eq uuid }
-                        .single()
-
-                    val classId = workout[Workouts.classId]
-                    val className = classId?.let {
-                        ClassSchedules.selectAll()
-                            .where { ClassSchedules.id eq it }
-                            .singleOrNull()
-                            ?.get(ClassSchedules.name)
-                    }
 
                     val exercises = Exercises.selectAll()
                         .where { Exercises.workoutId eq workoutId }
@@ -222,9 +193,7 @@ class WorkoutRepository {
                     WorkoutResponse(
                         id = workoutId.toString(),
                         boxId = uuid.toString(),
-                        boxName = box[Boxes.name],
-                        classId = classId?.toString(),
-                        className = className,
+                        boxName = boxName,
                         title = workout[Workouts.title],
                         description = workout[Workouts.description],
                         date = workout[Workouts.date].toString(),
@@ -232,7 +201,7 @@ class WorkoutRepository {
                         duration = workout[Workouts.duration],
                         difficulty = workout[Workouts.difficulty],
                         createdAt = workout[Workouts.createdAt].toString(),
-                        exercises = exercises,
+                        exercises = exercises
                     )
                 }
         } catch (e: Exception) {
@@ -291,14 +260,6 @@ class WorkoutRepository {
                 .where { Boxes.id eq boxId }
                 .single()
 
-            val classId = workout[Workouts.classId]
-            val className = classId?.let {
-                ClassSchedules.selectAll()
-                    .where { ClassSchedules.id eq it }
-                    .singleOrNull()
-                    ?.get(ClassSchedules.name)
-            }
-
             val exercises = Exercises.selectAll()
                 .where { Exercises.workoutId eq workoutId }
                 .map {
@@ -317,8 +278,6 @@ class WorkoutRepository {
                 id = workoutId.toString(),
                 boxId = boxId.toString(),
                 boxName = box[Boxes.name],
-                classId = classId?.toString(),
-                className = className,
                 title = workout[Workouts.title],
                 description = workout[Workouts.description],
                 exercises = exercises,

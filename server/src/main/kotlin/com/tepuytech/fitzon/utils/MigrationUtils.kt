@@ -1,11 +1,9 @@
 package com.tepuytech.fitzon.utils
 
-import com.tepuytech.fitzon.models.Achievements
 import com.tepuytech.fitzon.models.Athletes
 import com.tepuytech.fitzon.models.Boxes
 import com.tepuytech.fitzon.models.ClassEnrollments
 import com.tepuytech.fitzon.models.ClassSchedules
-import com.tepuytech.fitzon.models.Classes
 import com.tepuytech.fitzon.models.Coaches
 import com.tepuytech.fitzon.models.Exercises
 import com.tepuytech.fitzon.models.MembershipRenewals
@@ -28,14 +26,12 @@ object MigrationGenerator {
                     Boxes,
                     Athletes,
                     Coaches,
-                    Classes,
                     ClassEnrollments,
                     Workouts,
                     Exercises,
                     Notifications,
                     WorkoutLogs,
                     PersonalRecords,
-                    Achievements,
                     ClassSchedules,
                     MembershipRenewals
                 )

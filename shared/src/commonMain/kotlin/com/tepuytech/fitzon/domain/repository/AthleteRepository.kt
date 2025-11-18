@@ -2,6 +2,7 @@ package com.tepuytech.fitzon.domain.repository
 
 import com.tepuytech.fitzon.domain.model.athletes.AthleteDashboardResponse
 import com.tepuytech.fitzon.domain.model.athletes.AthleteProfileResponse
+import com.tepuytech.fitzon.domain.model.athletes.PersonalRecordsResponse
 import com.tepuytech.fitzon.domain.model.athletes.UpdateAthleteProfileResponse
 
 interface AthleteRepository {
@@ -12,4 +13,5 @@ interface AthleteRepository {
         weight: Double,
         height: Double
     ) : UpdateAthleteProfileResponse
+    suspend fun personalRecords(): List<PersonalRecordsResponse>
 }
