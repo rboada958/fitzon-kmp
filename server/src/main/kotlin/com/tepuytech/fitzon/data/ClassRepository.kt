@@ -1,6 +1,7 @@
 package com.tepuytech.fitzon.data
 
 import com.tepuytech.fitzon.models.*
+import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -490,6 +491,137 @@ class ClassRepository {
 
         } catch (e: Exception) {
             println("Error getting available classes: ${e.message}")
+            e.printStackTrace()
+            null
+        }
+    }
+
+    fun getClassDetails(classId: String, userId: String): ClassDetailsDTO? = transaction {
+        try {
+            val classUuid = UUID.fromString(classId)
+            val userUuid = UUID.fromString(userId)
+
+            // Obtener información de la clase
+            val classRow = ClassSchedules
+                .selectAll()
+                .where { ClassSchedules.id eq classUuid }
+                .singleOrNull() ?: return@transaction null
+
+            val coachId = classRow[ClassSchedules.coachId]
+            val workoutId = classRow[ClassSchedules.workoutId]
+
+            // Información del coach
+            val coachInfo = (Coaches innerJoin Users)
+                .selectAll()
+                .where { Coaches.id eq coachId }
+                .singleOrNull()
+                ?.let {
+                    val specialtiesJson = it[Coaches.specialties]
+                    val specialties = try {
+                        Json.decodeFromString<List<String>>(specialtiesJson)
+                    } catch (_: Exception) {
+                        listOf("Coach")
+                    }
+                    CoachInfoDTO(
+                        name = it[Users.name] ?: "Coach",
+                        specialty = specialties.firstOrNull() ?: "CrossFit Coach",
+                        icon = "👨‍🏫"
+                    )
+                } ?: return@transaction null
+
+            // Información del workout (si existe)
+            val workoutDetails = workoutId?.let { wId ->
+                val workout = Workouts
+                    .selectAll()
+                    .where { Workouts.id eq wId }
+                    .singleOrNull() ?: return@let null
+
+                val exercises = Exercises
+                    .selectAll()
+                    .where { Exercises.workoutId eq wId }
+                    .map { ex ->
+                        ExerciseDTO(
+                            id = ex[Exercises.id].toString(),
+                            name = ex[Exercises.name],
+                            sets = ex[Exercises.sets],
+                            reps = ex[Exercises.reps],
+                            weight = ex[Exercises.weight]
+                        )
+                    }
+
+                WorkoutDetailsDTO(
+                    id = workout[Workouts.id].toString(),
+                    title = workout[Workouts.title],
+                    description = workout[Workouts.description],
+                    duration = workout[Workouts.duration],
+                    difficulty = workout[Workouts.difficulty],
+                    exercises = exercises
+                )
+            }
+
+            // Atletas inscritos
+            val enrolledAthletes = (ClassEnrollments innerJoin Athletes innerJoin Users)
+                .selectAll()
+                .where { ClassEnrollments.classId eq classUuid }
+                .map { row ->
+                    val athleteId = row[Athletes.id]
+
+                    // Verificar si completó el workout (si existe)
+                    val hasCompleted = workoutId?.let { wId ->
+                        WorkoutLogs
+                            .selectAll()
+                            .where {
+                                (WorkoutLogs.athleteId eq athleteId) and
+                                        (WorkoutLogs.workoutId eq wId) and
+                                        (WorkoutLogs.completedAt greaterEq LocalDate.now().atStartOfDay())
+                            }
+                            .count() > 0
+                    } ?: false
+
+                    EnrolledAthleteDTO(
+                        id = athleteId.toString(),
+                        name = row[Users.name] ?: "Atleta",
+                        hasCompletedWorkout = hasCompleted
+                    )
+                }
+
+            // Verificar si el usuario actual está inscrito
+            val currentAthleteId = Athletes
+                .selectAll()
+                .where { Athletes.userId eq userUuid }
+                .singleOrNull()?.get(Athletes.id)
+
+            val isEnrolled = currentAthleteId?.let { athleteId ->
+                ClassEnrollments
+                    .selectAll()
+                    .where {
+                        (ClassEnrollments.classId eq classUuid) and
+                                (ClassEnrollments.athleteId eq athleteId)
+                    }
+                    .count() > 0
+            } ?: false
+
+            val maxCapacity = classRow[ClassSchedules.maxCapacity]
+            val currentEnrollment = enrolledAthletes.size
+
+            ClassDetailsDTO(
+                classId = classUuid.toString(),
+                className = classRow[ClassSchedules.name],
+                dayOfWeek = classRow[ClassSchedules.dayOfWeek],
+                startTime = classRow[ClassSchedules.startTime],
+                endTime = classRow[ClassSchedules.endTime],
+                level = classRow[ClassSchedules.level],
+                maxCapacity = maxCapacity,
+                currentEnrollment = currentEnrollment,
+                spotsLeft = maxCapacity - currentEnrollment,
+                coach = coachInfo,
+                workout = workoutDetails,
+                enrolledAthletes = enrolledAthletes,
+                isEnrolled = isEnrolled
+            )
+
+        } catch (e: Exception) {
+            println("Error getting class details: ${e.message}")
             e.printStackTrace()
             null
         }

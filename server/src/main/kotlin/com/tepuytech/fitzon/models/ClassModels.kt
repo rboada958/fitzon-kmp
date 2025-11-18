@@ -115,3 +115,46 @@ data class AvailableClassDTO(
     val workoutTitle: String?,
     val level: String
 )
+
+@Serializable
+data class ClassDetailsDTO(
+    val classId: String,
+    val className: String,
+    val dayOfWeek: String,
+    val startTime: String,
+    val endTime: String,
+    val level: String,
+    val maxCapacity: Int,
+    val currentEnrollment: Int,
+    val spotsLeft: Int,
+    val coach: CoachInfoDTO,
+    val workout: WorkoutDetailsDTO?,
+    val enrolledAthletes: List<EnrolledAthleteDTO>,
+    val isEnrolled: Boolean  // Si el usuario actual está inscrito
+)
+
+@Serializable
+data class WorkoutDetailsDTO(
+    val id: String,
+    val title: String,
+    val description: String?,
+    val duration: Int,
+    val difficulty: String,
+    val exercises: List<ExerciseDTO>
+)
+
+@Serializable
+data class ExerciseDTO(
+    val id: String,
+    val name: String,
+    val sets: Int,
+    val reps: Int,
+    val weight: String?
+)
+
+@Serializable
+data class EnrolledAthleteDTO(
+    val id: String,
+    val name: String,
+    val hasCompletedWorkout: Boolean = false
+)

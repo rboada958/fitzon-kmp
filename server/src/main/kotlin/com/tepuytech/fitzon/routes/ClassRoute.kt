@@ -177,6 +177,30 @@ fun Route.classRoutes(repo: ClassRepository) {
                     call.respond(HttpStatusCode.OK, result)
                 }
             }
+
+            // 📍 GET /api/classes/{id}
+            get("/{id}") {
+                val classId = call.parameters["id"] ?: run {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid class ID"))
+                    return@get
+                }
+
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("id")?.asString()
+
+                if (userId.isNullOrEmpty()) {
+                    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                    return@get
+                }
+
+                val classDetails = repo.getClassDetails(classId, userId)
+
+                if (classDetails != null) {
+                    call.respond(HttpStatusCode.OK, classDetails)
+                } else {
+                    call.respond(HttpStatusCode.NotFound, ErrorResponse("Class not found"))
+                }
+            }
         }
     }
 }
