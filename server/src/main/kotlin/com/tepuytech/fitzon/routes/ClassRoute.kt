@@ -2,6 +2,7 @@ package com.tepuytech.fitzon.routes
 
 import com.tepuytech.fitzon.data.ClassRepository
 import com.tepuytech.fitzon.models.CreateClassRequest
+import com.tepuytech.fitzon.models.EditClassRequest
 import com.tepuytech.fitzon.models.ErrorResponse
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
@@ -13,6 +14,7 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
+import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 
 fun Route.classRoutes(repo: ClassRepository) {
@@ -199,6 +201,49 @@ fun Route.classRoutes(repo: ClassRepository) {
                     call.respond(HttpStatusCode.OK, classDetails)
                 } else {
                     call.respond(HttpStatusCode.NotFound, ErrorResponse("Class not found"))
+                }
+            }
+            // 📍 PUT /api/classes/{classId}
+            put("/{classId}") {
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("id")?.asString()
+                val classId = call.parameters["classId"]
+
+                if (userId.isNullOrEmpty()) {
+                    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                    return@put
+                }
+
+                if (classId.isNullOrEmpty()) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Class ID required"))
+                    return@put
+                }
+
+                val request = try {
+                    call.receive<EditClassRequest>()
+                } catch (_: Exception) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid request format"))
+                    return@put
+                }
+
+                val result = repo.editClass(
+                    classId,
+                    userId,
+                    request.className,
+                    request.description,
+                    request.dayOfWeek,
+                    request.startTime,
+                    request.endTime,
+                    request.level,
+                    request.maxCapacity,
+                    request.coachId,
+                    request.workoutId
+                )
+
+                if (result == null) {
+                    call.respond(HttpStatusCode.NotFound, ErrorResponse("Class not found"))
+                } else {
+                    call.respond(HttpStatusCode.OK, result)
                 }
             }
         }

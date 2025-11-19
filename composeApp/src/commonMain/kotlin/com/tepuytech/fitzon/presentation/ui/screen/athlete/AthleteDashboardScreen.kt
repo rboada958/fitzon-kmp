@@ -33,6 +33,7 @@ import com.tepuytech.fitzon.domain.model.UpcomingClass
 import com.tepuytech.fitzon.domain.model.athletes.AthleteDashboardResponse
 import com.tepuytech.fitzon.presentation.state.AthleteUiState
 import com.tepuytech.fitzon.presentation.ui.composable.*
+import com.tepuytech.fitzon.presentation.ui.screen.ClassDetails
 import com.tepuytech.fitzon.presentation.ui.screen.NotificationCenter
 import com.tepuytech.fitzon.presentation.viewmodel.AthleteViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -78,6 +79,9 @@ class AthleteDashboard : Screen {
                     onWorkoutClick = { workoutId ->
                         navigator.push(WorkoutOfTheDay(workoutId))
                     },
+                    onDetailsClick = { classId ->
+                        navigator.push(ClassDetails(classId, false))
+                    },
                     onViewAvailableClasses = {
                         navigator.push(AvailableClasses())
                     },
@@ -100,6 +104,7 @@ fun AthleteDashboardScreen(
     onNotificationClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onWorkoutClick: (String) -> Unit = {},
+    onDetailsClick: (String) -> Unit = {},
     onViewAvailableClasses: () -> Unit = {},
     onPersonalRecordsClick: () -> Unit = {},
     onLeaderboardClick: () -> Unit = {}
@@ -275,7 +280,8 @@ fun AthleteDashboardScreen(
                                 dashboard.todayClasses?.forEach { classItem ->
                                     TodayClassCard(
                                         classItem = classItem,
-                                        onWorkoutClick = { onWorkoutClick(it) }
+                                        onWorkoutClick = { onWorkoutClick(it) },
+                                        onDetailsClick = { onDetailsClick(classItem.classId) }
                                     )
                                 }
                             }
@@ -320,7 +326,9 @@ fun AthleteDashboardScreen(
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 dashboard.upcomingClasses.take(3).forEach { classItem ->
-                                    UpcomingClassCard(classItem = classItem)
+                                    UpcomingClassCard(classItem = classItem) {
+                                        onDetailsClick(classItem.classId)
+                                    }
                                 }
                             }
                         }
@@ -535,28 +543,34 @@ fun AthleteDashboardScreen(
 @Composable
 fun TodayClassCard(
     classItem: TodayClass,
-    onWorkoutClick: (String) -> Unit
+    onWorkoutClick: (String) -> Unit,
+    onDetailsClick: () -> Unit = {}
 ) {
     val workout = classItem.workout
 
     if (workout?.isCompleted == true) {
-        CompletedClassCard(classItem = classItem)
+        CompletedClassCard(
+            classItem = classItem,
+            onDetailsClick = onDetailsClick
+        )
     } else {
         FullTodayClassCard(
             classItem = classItem,
-            onWorkoutClick = onWorkoutClick
+            onWorkoutClick = onWorkoutClick,
+            onDetailsClick = onDetailsClick
         )
     }
 }
 
 @Composable
 fun CompletedClassCard(
-    classItem: TodayClass
+    classItem: TodayClass,
+    onDetailsClick: () -> Unit = {}
 ) {
     val workout = classItem.workout
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable { onDetailsClick() },
         shape = RoundedCornerShape(12.dp),
         color = cardBackground
     ) {
@@ -618,12 +632,13 @@ fun CompletedClassCard(
 @Composable
 fun FullTodayClassCard(
     classItem: TodayClass,
-    onWorkoutClick: (String) -> Unit
+    onWorkoutClick: (String) -> Unit,
+    onDetailsClick: () -> Unit = {}
 ) {
     val workout = classItem.workout
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable { onDetailsClick() },
         shape = RoundedCornerShape(20.dp),
         color = if (workout != null) greenPrimary else cardBackground
     ) {
@@ -757,10 +772,11 @@ fun FullTodayClassCard(
 
 @Composable
 fun UpcomingClassCard(
-    classItem: UpcomingClass
+    classItem: UpcomingClass,
+    onDetailsClick: () -> Unit = {}
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable { onDetailsClick() },
         shape = RoundedCornerShape(12.dp),
         color = cardBackground
     ) {

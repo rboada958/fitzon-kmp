@@ -1,9 +1,23 @@
 package com.tepuytech.fitzon.presentation.ui.screen.athlete
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -11,8 +25,28 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,10 +59,17 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.tepuytech.fitzon.domain.model.athletes.AvailableClassesResponse
 import com.tepuytech.fitzon.domain.model.athletes.AvailableClassesResponseItem
+import com.tepuytech.fitzon.getPlatform
 import com.tepuytech.fitzon.presentation.state.ClassUiState
-import com.tepuytech.fitzon.presentation.ui.composable.*
+import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
+import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
+import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
+import com.tepuytech.fitzon.presentation.ui.composable.greenLight
+import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
+import com.tepuytech.fitzon.presentation.ui.composable.mapDayToSpanish
+import com.tepuytech.fitzon.presentation.ui.composable.textGray
+import com.tepuytech.fitzon.presentation.ui.screen.ClassDetails
 import com.tepuytech.fitzon.presentation.viewmodel.ClassViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -39,25 +80,79 @@ class AvailableClasses : Screen {
         val viewModel = getScreenModel<ClassViewModel>()
         val uiState by viewModel.availableClassesState.collectAsState()
         val enrollmentState by viewModel.enrollmentState.collectAsState()
+        var classes by remember { mutableStateOf(listOf<AvailableClassesResponseItem>()) }
+
 
         LaunchedEffect(Unit) {
             viewModel.loadAvailableClasses()
+        }
+
+        when (val state = uiState) {
+            is ClassUiState.Loading -> {
+                AthleteDashboardShimmer()
+                return
+            }
+
+            is ClassUiState.Error -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(32.dp)
+                    ) {
+                        Text("⚠️", fontSize = 64.sp)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "Error al cargar clases",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            state.message,
+                            fontSize = 14.sp,
+                            color = textGray,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(
+                            onClick = { viewModel.loadAvailableClasses() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = greenPrimary
+                            )
+                        ) {
+                            Text("Reintentar")
+                        }
+                    }
+                }
+            }
+
+            is ClassUiState.AvailableClassesLoaded -> {
+                classes = state.classes.classes
+            }
+
+            else -> {}
         }
 
         LaunchedEffect(enrollmentState) {
             if (enrollmentState is ClassUiState.EnrollmentSuccess ||
                 enrollmentState is ClassUiState.UnenrollmentSuccess) {
                 viewModel.loadAvailableClasses()
+                viewModel.clearEnrollmentState()
             }
         }
 
         AvailableClassesScreen(
-            uiState = uiState,
+            classes = classes,
             enrollmentState = enrollmentState,
             onBackClick = { navigator.pop() },
             onEnrollClick = { classId -> viewModel.enrollInClass(classId) },
             onUnenrollClick = { classId -> viewModel.unenrollFromClass(classId) },
-            onRetry = { viewModel.loadAvailableClasses() }
+            onDetailsClick = { classId -> navigator.push(ClassDetails(classId, false)) }
         )
     }
 }
@@ -65,12 +160,12 @@ class AvailableClasses : Screen {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AvailableClassesScreen(
-    uiState: ClassUiState,
     enrollmentState: ClassUiState,
     onBackClick: () -> Unit = {},
     onEnrollClick: (String) -> Unit = {},
     onUnenrollClick: (String) -> Unit = {},
-    onRetry: () -> Unit = {}
+    onDetailsClick: (String) -> Unit = {},
+    classes: List<AvailableClassesResponseItem> = emptyList()
 ) {
     var selectedDay by remember { mutableStateOf<String?>(null) }
     var visible by remember { mutableStateOf(false) }
@@ -79,17 +174,12 @@ fun AvailableClassesScreen(
         visible = true
     }
 
-    val filteredClasses = remember(uiState, selectedDay) {
-        if (uiState is ClassUiState.AvailableClassesLoaded) {
-            if (selectedDay == null) {
-                uiState.classes.classes
-            } else {
-                uiState.classes.classes.filter { it.dayOfWeek == selectedDay }
-            }
-        } else {
-            emptyList()
-        }
+    val filteredClasses = remember(classes, selectedDay) {
+        if (selectedDay == null) classes
+        else classes.filter { it.dayOfWeek == selectedDay }
     }
+
+    val platform = getPlatform()
 
     Scaffold(
         topBar = {
@@ -103,11 +193,19 @@ fun AvailableClassesScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver",
-                            tint = Color.White
-                        )
+                        if (platform.name.contains("iOS")) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBackIos,
+                                contentDescription = "Back",
+                                tint = Color.White
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -124,17 +222,25 @@ fun AvailableClassesScreen(
                 .background(brush = backgroundGradient)
                 .padding(paddingValues)
         ) {
-            when (uiState) {
-                is ClassUiState.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = greenPrimary)
-                    }
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Filtros por día
+                AnimatedVisibility(
+                    visible = visible,
+                    enter = fadeIn() + slideInVertically()
+                ) {
+                    DayFilterRow(
+                        selectedDay = selectedDay,
+                        onDaySelected = { day ->
+                            selectedDay = day
+                        }
+                    )
                 }
 
-                is ClassUiState.Error -> {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (filteredClasses.isEmpty()) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -143,129 +249,69 @@ fun AvailableClassesScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.padding(32.dp)
                         ) {
-                            Text("⚠️", fontSize = 64.sp)
+                            Text("📅", fontSize = 64.sp)
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                "Error al cargar clases",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
+                                "No hay clases disponibles",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
                                 color = Color.White,
                                 textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                uiState.message,
+                                if (selectedDay != null)
+                                    "Intenta con otro día"
+                                else
+                                    "Aún no hay clases programadas",
                                 fontSize = 14.sp,
                                 color = textGray,
                                 textAlign = TextAlign.Center
                             )
-                            Spacer(modifier = Modifier.height(24.dp))
-                            Button(
-                                onClick = onRetry,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = greenPrimary
-                                )
-                            ) {
-                                Text("Reintentar")
-                            }
                         }
                     }
-                }
-
-                is ClassUiState.AvailableClassesLoaded -> {
-                    Column(
-                        modifier = Modifier.fillMaxSize()
+                } else {
+                    AnimatedVisibility(
+                        visible = visible,
+                        enter = fadeIn() + slideInVertically(
+                            animationSpec = tween(500, delayMillis = 100)
+                        )
                     ) {
-                        // Filtros por día
-                        AnimatedVisibility(
-                            visible = visible,
-                            enter = fadeIn() + slideInVertically()
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            DayFilterRow(
-                                selectedDay = selectedDay,
-                                onDaySelected = { day ->
-                                    selectedDay = day
-                                }
-                            )
-                        }
+                            val groupedClasses = filteredClasses.groupBy { it.dayOfWeek }
 
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        if (filteredClasses.isEmpty()) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.padding(32.dp)
-                                ) {
-                                    Text("📅", fontSize = 64.sp)
-                                    Spacer(modifier = Modifier.height(16.dp))
+                            groupedClasses.forEach { (dayOfWeek, classes) ->
+                                item {
                                     Text(
-                                        "No hay clases disponibles",
+                                        text = mapDayToSpanish(dayOfWeek),
                                         fontSize = 18.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Color.White,
-                                        textAlign = TextAlign.Center
+                                        fontWeight = FontWeight.Bold,
+                                        color = greenLight,
+                                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
                                     )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        if (selectedDay != null)
-                                            "Intenta con otro día"
-                                        else
-                                            "Aún no hay clases programadas",
-                                        fontSize = 14.sp,
-                                        color = textGray,
-                                        textAlign = TextAlign.Center
+                                }
+
+                                items(classes) { classItem ->
+                                    AvailableClassCard(
+                                        classItem = classItem,
+                                        enrollmentState = enrollmentState,
+                                        onEnrollClick = { onEnrollClick(classItem.id) },
+                                        onUnenrollClick = { onUnenrollClick(classItem.id) },
+                                        onDetailsClick = { onDetailsClick(classItem.id) }
                                     )
                                 }
                             }
-                        } else {
-                            AnimatedVisibility(
-                                visible = visible,
-                                enter = fadeIn() + slideInVertically(
-                                    animationSpec = tween(500, delayMillis = 100)
-                                )
-                            ) {
-                                LazyColumn(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    val groupedClasses = filteredClasses.groupBy { it.dayOfWeek }
 
-                                    groupedClasses.forEach { (dayOfWeek, classes) ->
-                                        item {
-                                            Text(
-                                                text = mapDayToSpanish(dayOfWeek),
-                                                fontSize = 18.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = greenLight,
-                                                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                                            )
-                                        }
-
-                                        items(classes) { classItem ->
-                                            AvailableClassCard(
-                                                classItem = classItem,
-                                                enrollmentState = enrollmentState,
-                                                onEnrollClick = { onEnrollClick(classItem.id) },
-                                                onUnenrollClick = { onUnenrollClick(classItem.id) }
-                                            )
-                                        }
-                                    }
-
-                                    item {
-                                        Spacer(modifier = Modifier.height(80.dp))
-                                    }
-                                }
+                            item {
+                                Spacer(modifier = Modifier.height(80.dp))
                             }
                         }
                     }
                 }
-
-                else -> {}
             }
         }
     }
@@ -319,13 +365,14 @@ fun AvailableClassCard(
     classItem: AvailableClassesResponseItem,
     enrollmentState: ClassUiState,
     onEnrollClick: () -> Unit,
-    onUnenrollClick: () -> Unit
+    onUnenrollClick: () -> Unit,
+    onDetailsClick: () -> Unit = {}
 ) {
     val isProcessing = enrollmentState is ClassUiState.EnrollmentLoading &&
             enrollmentState.classId == classItem.id
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable { onDetailsClick() },
         shape = RoundedCornerShape(16.dp),
         color = cardBackground,
         shadowElevation = if (classItem.isEnrolled) 4.dp else 0.dp
@@ -560,11 +607,6 @@ fun AvailableClassCard(
 @Composable
 fun AvailableClassesScreenPreview() {
     AvailableClassesScreen(
-        uiState = ClassUiState.AvailableClassesLoaded(
-            AvailableClassesResponse(
-                classes = listOf()
-            )
-        ),
-        enrollmentState = ClassUiState.Idle
+        enrollmentState = ClassUiState.Idle,
     )
 }

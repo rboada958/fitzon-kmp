@@ -8,6 +8,7 @@ import com.tepuytech.fitzon.domain.model.athletes.AvailableClassesResponse
 import com.tepuytech.fitzon.domain.model.athletes.EnrollmentResponse
 import com.tepuytech.fitzon.domain.model.athletes.UnEnrollmentResponse
 import com.tepuytech.fitzon.domain.model.box.BoxDashboardResponse
+import com.tepuytech.fitzon.domain.model.classes.ClassDetailsResponse
 import com.tepuytech.fitzon.domain.model.classes.ClassesResponse
 import com.tepuytech.fitzon.domain.model.classes.CreateClassRequest
 import com.tepuytech.fitzon.domain.model.classes.CreateClassResponse
@@ -193,6 +194,37 @@ class ClassRepositoryImpl(
                         refreshToken = tokenResponse.refreshToken
                     )
                     apiService.unenrollInClass(classId)
+                } catch (_: Exception) {
+                    throw ApiException("Authentication failed - please login again")
+                }
+            } else {
+                try {
+                    val errorResponse = e.response.body<BoxDashboardResponse>()
+                    throw ApiException(errorResponse.message ?: "Unknown error")
+                } catch (e: Exception) {
+                    println("Error: ${e.message}")
+                    throw ApiException("Failed to delete workout")
+                }
+            }
+        } catch (_: ServerResponseException) {
+            throw ApiException("Server error")
+        } catch (e: Exception) {
+            throw ApiException(e.message ?: "Connection error")
+        }
+    }
+
+    override suspend fun classDetails(classId: String): ClassDetailsResponse {
+        return try {
+            apiService.classDetails(classId)
+        } catch (e: ClientRequestException) {
+            if (e.response.status == HttpStatusCode.Unauthorized) {
+                try {
+                    val tokenResponse = api.refreshToken()
+                    sessionManager.updateTokens(
+                        accessToken = tokenResponse.accessToken,
+                        refreshToken = tokenResponse.refreshToken
+                    )
+                    apiService.classDetails(classId)
                 } catch (_: Exception) {
                     throw ApiException("Authentication failed - please login again")
                 }

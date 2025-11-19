@@ -35,7 +35,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -371,10 +370,6 @@ fun WorkoutOfTheDayScreen(
                                             it
                                         }
                                     }
-                                },
-                                onEdit = {},
-                                onDelete = { exerciseId ->
-                                    exercises = exercises.filter { it.id != exerciseId }
                                 }
                             )
                         }
@@ -474,9 +469,7 @@ fun ExerciseCard(
     cardBackground: Color,
     greenPrimary: Color,
     textGray: Color,
-    onToggleComplete: (String) -> Unit,
-    onEdit: (String) -> Unit,
-    onDelete: (String) -> Unit
+    onToggleComplete: (String) -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -559,7 +552,7 @@ fun ExerciseCard(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = exercise.name,
+                    text = formatExerciseName(exerciseName = normalizeExerciseName(exerciseName = exercise.name)),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = if (exercise.isCompleted)
@@ -607,34 +600,6 @@ fun ExerciseCard(
                         },
                         onClick = {
                             onToggleComplete(exercise.id)
-                            showMenu = false
-                        }
-                    )
-
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("✏️ ", fontSize = 18.sp)
-                                Text("Editar ejercicio", color = Color.White)
-                            }
-                        },
-                        onClick = {
-                            onEdit(exercise.id)
-                            showMenu = false
-                        }
-                    )
-
-                    HorizontalDivider(color = Color(0xFF2D6A4F))
-
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("🗑️ ", fontSize = 18.sp)
-                                Text("Eliminar", color = Color(0xFFFF6B6B))
-                            }
-                        },
-                        onClick = {
-                            onDelete(exercise.id)
                             showMenu = false
                         }
                     )

@@ -71,6 +71,7 @@ import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
 import com.tepuytech.fitzon.presentation.ui.composable.mapDayToSpanish
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
+import com.tepuytech.fitzon.presentation.ui.screen.ClassDetails
 import com.tepuytech.fitzon.presentation.viewmodel.ClassViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -107,7 +108,10 @@ class ManageClasses(val boxId: String) : Screen {
             onCreateClassClick = { navigator.push(CreateClass(boxId)) },
             onDeleteClass = { classId ->
                 viewModel.deleteClass(classId)
-            }
+            },
+            onDetailsClick = { classId ->
+                navigator.push(ClassDetails(classId))
+            },
         )
 
         if (uiState is ClassUiState.LoadingDeleteClass) {
@@ -133,7 +137,8 @@ fun ManageClassesScreen(
     onBackClick: () -> Unit = {},
     onCreateClassClick: () -> Unit = {},
     onEditClass: (String) -> Unit = {},
-    onDeleteClass: (String) -> Unit = {}
+    onDeleteClass: (String) -> Unit = {},
+    onDetailsClick: (String) -> Unit = {}
 ) {
     var classes by remember {
         mutableStateOf(
@@ -485,14 +490,14 @@ fun ManageClassesScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Button(
-                            onClick = { /* Ver inscritos */ },
+                            onClick = { onDetailsClick(selectedClass!!.id) },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = greenPrimary
                             ),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("👥 Ver Inscritos (${selectedClass!!.currentEnrollment})", color = Color(0xFF081C15))
+                            Text("👥 Ver Todo", color = Color(0xFF081C15))
                         }
 
                         OutlinedButton(
@@ -504,30 +509,6 @@ fun ManageClassesScreen(
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text("✏️ Editar Clase")
-                        }
-
-                        if (selectedClass!!.status == ClassStatus.ACTIVE) {
-                            OutlinedButton(
-                                onClick = { /* Cancelar */ },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = Color(0xFFFFB84D)
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Text("🚫 Cancelar Clase")
-                            }
-                        } else if (selectedClass!!.status == ClassStatus.CANCELLED) {
-                            OutlinedButton(
-                                onClick = { /* Reactivate */ },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = greenLight
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Text("✅ Reactivar Clase")
-                            }
                         }
 
                         OutlinedButton(

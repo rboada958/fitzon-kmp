@@ -95,9 +95,9 @@ class BoxRepository {
                         (Athletes.boxId eq boxId) and
                                 (WorkoutLogs.completedAt.date() eq today)
                     }
-                    .withDistinct()
+                    .map { it[WorkoutLogs.athleteId] }
+                    .distinct()
                     .count()
-                    .toInt()
             } else {
                 0
             }

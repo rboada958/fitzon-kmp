@@ -5,6 +5,7 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import com.tepuytech.fitzon.domain.model.classes.ClassResult
 import com.tepuytech.fitzon.domain.model.classes.CreateClassRequest
 import com.tepuytech.fitzon.domain.usecase.AvailableClassesUseCase
+import com.tepuytech.fitzon.domain.usecase.ClassesDetailsUseCase
 import com.tepuytech.fitzon.domain.usecase.ClassesUseCase
 import com.tepuytech.fitzon.domain.usecase.CreateClassUseCase
 import com.tepuytech.fitzon.domain.usecase.DeleteClassUseCase
@@ -22,6 +23,7 @@ class ClassViewModel (
     private val availableClassesUseCase: AvailableClassesUseCase,
     private val enrollClassUseCase: EnrollClassUseCase,
     private val unenrollClassUseCase: UnEnrollClassUseCase,
+    private val classesDetailsUseCase: ClassesDetailsUseCase
 ) : ScreenModel {
 
     private val _uiState = MutableStateFlow<ClassUiState>(ClassUiState.Idle)
@@ -169,5 +171,28 @@ class ClassViewModel (
                 _enrollmentState.value = ClassUiState.Error(e.message ?: "Unknown error")
             }
         }
+    }
+
+    fun classDetails(classId: String) {
+        screenModelScope.launch {
+            _uiState.value = ClassUiState.Loading
+            try {
+                when (val result = classesDetailsUseCase(classId)) {
+                    is ClassResult.SuccessClassDetails -> {
+                        _uiState.value = ClassUiState.SuccessClassDetails(result.response)
+                    }
+                    is ClassResult.Error -> {
+                        _uiState.value = ClassUiState.Error(result.message)
+                    }
+                    else -> {}
+                }
+            } catch (e: Exception) {
+                _enrollmentState.value = ClassUiState.Error(e.message ?: "Unknown error")
+            }
+        }
+    }
+
+    fun clearEnrollmentState() {
+        _enrollmentState.value = ClassUiState.Idle
     }
 }
