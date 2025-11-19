@@ -59,6 +59,7 @@ import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
 import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
+import com.tepuytech.fitzon.presentation.ui.screen.ClassDetails
 import com.tepuytech.fitzon.presentation.ui.screen.NotificationCenterBox
 import com.tepuytech.fitzon.presentation.viewmodel.BoxViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -86,7 +87,15 @@ class BoxDashboard : Screen {
                     boxState = boxState.copy(todayClasses = sortedClasses),
                     onSeeAllClick = { boxState.boxId?.let {navigator.push(ManageClasses(it)) }},
                     onNotificationClick = { navigator.push(NotificationCenterBox()) },
-                    onProfileClick = { navigator.push(BoxProfile()) }
+                    onProfileClick = { navigator.push(BoxProfile()) },
+                    onCreateClassClick = {
+                        boxState.boxId?.let {
+                            navigator.push(CreateClass(it))
+                        }
+                    },
+                    onClassDetailsClick = { classId ->
+                        navigator.push(ClassDetails(classId))
+                    }
                 )
             }
             is BoxUiState.Error -> {
@@ -103,7 +112,9 @@ fun BoxDashboardScreen(
     boxState: BoxDashboardResponse = BoxDashboardResponse(),
     onSeeAllClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {}
+    onProfileClick: () -> Unit = {},
+    onCreateClassClick: () -> Unit = {},
+    onClassDetailsClick: (String) -> Unit = {}
 ) {
 
     var visible by remember { mutableStateOf(false) }
@@ -234,7 +245,8 @@ fun BoxDashboardScreen(
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 16.dp),
+                                    .padding(vertical = 16.dp)
+                                    .clickable { onCreateClassClick() },
                                 shape = RoundedCornerShape(12.dp),
                                 color = cardBackground
                             ) {
@@ -250,14 +262,15 @@ fun BoxDashboardScreen(
                                         modifier = Modifier.padding(bottom = 12.dp)
                                     )
                                     Text(
-                                        text = "Día libre",
-                                        fontSize = 18.sp,
+                                        text = "No hay clases programadas para hoy",
+                                        fontSize = 17.sp,
                                         fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center,
                                         color = Color.White
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "No hay clases programadas para hoy",
+                                        text = "Crear nueva clase",
                                         fontSize = 14.sp,
                                         color = textGray,
                                         textAlign = TextAlign.Center
@@ -270,6 +283,7 @@ fun BoxDashboardScreen(
                             ) {
                                 boxState.todayClasses?.take(5)?.forEach { classItem ->
                                     ClassCard(
+                                        onClassDetailsClick = { onClassDetailsClick(classItem.id) },
                                         classSchedule = classItem,
                                         cardBackground = cardBackground,
                                         greenPrimary = greenPrimary,
@@ -358,6 +372,7 @@ fun BoxDashboardScreen(
 
 @Composable
 fun ClassCard(
+    onClassDetailsClick: () -> Unit = {},
     classSchedule: ClassSchedule,
     cardBackground: Color,
     greenPrimary: Color,
@@ -365,7 +380,7 @@ fun ClassCard(
     textGray: Color
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable { onClassDetailsClick() },
         shape = RoundedCornerShape(12.dp),
         color = if (classSchedule.isNow) greenPrimary.copy(alpha = 0.2f) else cardBackground
     ) {

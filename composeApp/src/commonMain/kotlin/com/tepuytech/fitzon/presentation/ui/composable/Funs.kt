@@ -12,3 +12,12 @@ fun mapDayToSpanish(day: String): String {
         else -> day
     }
 }
+
+fun mapLevelToSpanish(level: String): String {
+    return when (level) {
+        "BEGINNER" -> "Principiante"
+        "INTERMEDIATE" -> "Intermedio"
+        "ADVANCED" -> "Avanzado"
+        else -> level
+    }
+}

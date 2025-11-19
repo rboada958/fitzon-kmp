@@ -1,10 +1,41 @@
 package com.tepuytech.fitzon.data
 
-import com.tepuytech.fitzon.models.*
+import com.tepuytech.fitzon.models.Athletes
+import com.tepuytech.fitzon.models.AvailableClassDTO
+import com.tepuytech.fitzon.models.AvailableClassesResponse
+import com.tepuytech.fitzon.models.Boxes
+import com.tepuytech.fitzon.models.ClassDetailsDTO
+import com.tepuytech.fitzon.models.ClassEnrollmentInfo
+import com.tepuytech.fitzon.models.ClassEnrollments
+import com.tepuytech.fitzon.models.ClassScheduleItem
+import com.tepuytech.fitzon.models.ClassSchedules
+import com.tepuytech.fitzon.models.CoachInfoDTO
+import com.tepuytech.fitzon.models.Coaches
+import com.tepuytech.fitzon.models.EditClassResponse
+import com.tepuytech.fitzon.models.EnrolledAthleteDTO
+import com.tepuytech.fitzon.models.EnrollmentDTO
+import com.tepuytech.fitzon.models.EnrollmentResponse
+import com.tepuytech.fitzon.models.ExerciseDTO
+import com.tepuytech.fitzon.models.Exercises
+import com.tepuytech.fitzon.models.MyClassesResponse
+import com.tepuytech.fitzon.models.TodayClassDTO
+import com.tepuytech.fitzon.models.UpcomingClassDTO
+import com.tepuytech.fitzon.models.Users
+import com.tepuytech.fitzon.models.WorkoutDetailsDTO
+import com.tepuytech.fitzon.models.WorkoutLogs
+import com.tepuytech.fitzon.models.WorkoutPreviewDTO
+import com.tepuytech.fitzon.models.Workouts
 import kotlinx.serialization.json.Json
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.SqlExpressionBuilder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.andWhere
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -623,6 +654,132 @@ class ClassRepository {
         } catch (e: Exception) {
             println("Error getting class details: ${e.message}")
             e.printStackTrace()
+            null
+        }
+    }
+
+    fun editClass(
+        classId: String,
+        userId: String,
+        className: String,
+        description: String,
+        dayOfWeek: String,
+        startTime: String,
+        endTime: String,
+        level: String,
+        maxCapacity: Int,
+        coachId: String,
+        workoutId: String?
+    ): EditClassResponse? = transaction {
+        try {
+            val classUuid = UUID.fromString(classId)
+            val userUuid = UUID.fromString(userId)
+
+            val box = Boxes
+                .selectAll()
+                .where { Boxes.ownerId eq userUuid }
+                .singleOrNull() ?: return@transaction null
+
+            val boxId = box[Boxes.id]
+
+            // Verificar que la clase pertenece al box del usuario
+            val classSchedule = ClassSchedules
+                .selectAll()
+                .where {
+                    (ClassSchedules.id eq classUuid) and
+                            (ClassSchedules.boxId eq boxId)
+                }
+                .singleOrNull() ?: return@transaction null
+
+            val currentEnrollment = classSchedule[ClassSchedules.currentEnrollment]
+
+            if (maxCapacity < currentEnrollment) {
+                return@transaction null
+            }
+
+            // Verificar que el coach existe y pertenece al box
+            val coachUuid = UUID.fromString(coachId)
+            val coachExists = Coaches
+                .selectAll()
+                .where {
+                    (Coaches.id eq coachUuid) and
+                            (Coaches.boxId eq boxId)
+                }
+                .count() > 0
+
+            if (!coachExists) {
+                return@transaction null
+            }
+
+            // Verificar workout
+            var workoutExists = true
+            if (!workoutId.isNullOrEmpty()) {
+                val workoutUuid = UUID.fromString(workoutId)
+                workoutExists = Workouts
+                    .selectAll()
+                    .where { Workouts.id eq workoutUuid }
+                    .count() > 0
+            }
+
+            if (!workoutExists) {
+                return@transaction null
+            }
+
+            // Actualizar clase
+            ClassSchedules.update({ ClassSchedules.id eq classUuid }) {
+                it[ClassSchedules.name] = className
+                it[ClassSchedules.dayOfWeek] = dayOfWeek
+                it[ClassSchedules.startTime] = startTime
+                it[ClassSchedules.endTime] = endTime
+                it[ClassSchedules.level] = level
+                it[ClassSchedules.maxCapacity] = maxCapacity
+                it[ClassSchedules.coachId] = coachUuid
+                if (!workoutId.isNullOrEmpty()) {
+                    it[ClassSchedules.workoutId] = UUID.fromString(workoutId)
+                } else {
+                    it[ClassSchedules.workoutId] = null
+                }
+            }
+
+            // Obtener info del coach
+            val coach = Coaches
+                .innerJoin(Users)
+                .selectAll()
+                .where { Coaches.id eq coachUuid }
+                .singleOrNull()
+
+            val coachName = coach?.get(Users.name) ?: "Coach"
+
+            // Obtener info del workout
+            val workoutTitle = if (!workoutId.isNullOrEmpty()) {
+                Workouts
+                    .selectAll()
+                    .where { Workouts.id eq UUID.fromString(workoutId) }
+                    .singleOrNull()
+                    ?.get(Workouts.title)
+            } else {
+                null
+            }
+
+            val spotsLeft = maxCapacity - currentEnrollment
+
+            EditClassResponse(
+                classId = classUuid.toString(),
+                className = className,
+                dayOfWeek = dayOfWeek,
+                description = description,
+                startTime = startTime,
+                endTime = endTime,
+                level = level,
+                maxCapacity = maxCapacity,
+                currentEnrollment = currentEnrollment,
+                spotsLeft = spotsLeft,
+                coachId = coachUuid.toString(),
+                coachName = coachName,
+                workoutId = workoutId,
+                workoutTitle = workoutTitle
+            )
+        } catch (_: Exception) {
             null
         }
     }

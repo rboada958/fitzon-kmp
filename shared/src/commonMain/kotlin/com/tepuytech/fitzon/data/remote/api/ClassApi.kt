@@ -4,6 +4,7 @@ import com.tepuytech.fitzon.data.local.SessionManager
 import com.tepuytech.fitzon.domain.model.athletes.AvailableClassesResponse
 import com.tepuytech.fitzon.domain.model.athletes.EnrollmentResponse
 import com.tepuytech.fitzon.domain.model.athletes.UnEnrollmentResponse
+import com.tepuytech.fitzon.domain.model.classes.ClassDetailsResponse
 import com.tepuytech.fitzon.domain.model.classes.ClassesResponse
 import com.tepuytech.fitzon.domain.model.classes.CreateClassRequest
 import com.tepuytech.fitzon.domain.model.classes.CreateClassResponse
@@ -84,6 +85,18 @@ class ClassApi(
 
     suspend fun unenrollInClass(classId: String) : UnEnrollmentResponse {
         val response = httpClient.delete("api/classes/${classId}/enroll") {
+            header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
+        }
+
+        if (response.status == HttpStatusCode.Unauthorized) {
+            throw ClientRequestException(response, "Unauthorized")
+        }
+
+        return response.body()
+    }
+
+    suspend fun classDetails(classId: String) : ClassDetailsResponse {
+        val response = httpClient.get("api/classes/$classId") {
             header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
         }
 

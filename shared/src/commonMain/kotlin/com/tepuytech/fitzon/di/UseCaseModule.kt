@@ -8,6 +8,7 @@ import com.tepuytech.fitzon.domain.usecase.BoxInfoUseCase
 import com.tepuytech.fitzon.domain.usecase.BoxProfileUseCase
 import com.tepuytech.fitzon.domain.usecase.BoxWorkoutUseCase
 import com.tepuytech.fitzon.domain.usecase.BoxesUseCase
+import com.tepuytech.fitzon.domain.usecase.ClassesDetailsUseCase
 import com.tepuytech.fitzon.domain.usecase.ClassesUseCase
 import com.tepuytech.fitzon.domain.usecase.CoachesUseCase
 import com.tepuytech.fitzon.domain.usecase.CompleteWorkoutUseCase
@@ -173,6 +174,12 @@ val useCaseModule = module {
 
     factory {
         UnEnrollClassUseCase(
+            classRepository = get()
+        )
+    }
+
+    factory {
+        ClassesDetailsUseCase(
             classRepository = get()
         )
     }
