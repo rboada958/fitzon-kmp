@@ -14,4 +14,6 @@ sealed class ClassResult {
     data class EnrollmentSuccess(val response: EnrollmentResponse) : ClassResult()
     data class UnenrollmentSuccess(val response: UnEnrollmentResponse) : ClassResult()
     data class SuccessClassDetails(val response: ClassDetailsResponse) : ClassResult()
+    data class SuccessUpdateClass(val response: UpdateClassResponse) : ClassResult()
+
 }

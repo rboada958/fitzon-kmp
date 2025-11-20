@@ -7,6 +7,7 @@ import com.tepuytech.fitzon.domain.model.classes.ClassDetailsResponse
 import com.tepuytech.fitzon.domain.model.classes.ClassesResponse
 import com.tepuytech.fitzon.domain.model.classes.CreateClassRequest
 import com.tepuytech.fitzon.domain.model.classes.CreateClassResponse
+import com.tepuytech.fitzon.domain.model.classes.UpdateClassResponse
 
 interface ClassRepository {
     suspend fun createClass(request: CreateClassRequest): CreateClassResponse
@@ -16,5 +17,5 @@ interface ClassRepository {
     suspend fun enrollInClass(classId: String): EnrollmentResponse
     suspend fun unenrollInClass(classId: String) : UnEnrollmentResponse
     suspend fun classDetails(classId: String) : ClassDetailsResponse
-    suspend fun updateClass(request: CreateClassRequest, classId: String): CreateClassResponse
+    suspend fun updateClass(request: CreateClassRequest, classId: String): UpdateClassResponse
 }

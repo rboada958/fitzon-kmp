@@ -8,6 +8,7 @@ import com.tepuytech.fitzon.domain.model.classes.ClassDetailsResponse
 import com.tepuytech.fitzon.domain.model.classes.ClassesResponse
 import com.tepuytech.fitzon.domain.model.classes.CreateClassRequest
 import com.tepuytech.fitzon.domain.model.classes.CreateClassResponse
+import com.tepuytech.fitzon.domain.model.classes.UpdateClassResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
@@ -15,6 +16,7 @@ import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
 
@@ -107,8 +109,8 @@ class ClassApi(
         return response.body()
     }
 
-    suspend fun updateClass(createClassRequest: CreateClassRequest, classId: String): CreateClassResponse {
-        val response = httpClient.post("api/classes/${classId}") {
+    suspend fun updateClass(createClassRequest: CreateClassRequest, classId: String): UpdateClassResponse {
+        val response = httpClient.put("api/classes/${classId}") {
             header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
             setBody(createClassRequest)
         }

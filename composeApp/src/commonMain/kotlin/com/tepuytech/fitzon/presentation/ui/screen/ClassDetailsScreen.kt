@@ -85,7 +85,7 @@ class ClassDetails(val classId: String, val boxOwner: Boolean = true) : Screen {
         }
 
         when (val state = uiState) {
-            is ClassUiState.Loading -> {
+            is ClassUiState.LoadingClassDetails -> {
                 AthleteDashboardShimmer()
             }
 
