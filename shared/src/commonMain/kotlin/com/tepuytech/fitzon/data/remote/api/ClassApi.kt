@@ -106,4 +106,17 @@ class ClassApi(
 
         return response.body()
     }
+
+    suspend fun updateClass(createClassRequest: CreateClassRequest, classId: String): CreateClassResponse {
+        val response = httpClient.post("api/classes/${classId}") {
+            header("Authorization", "Bearer ${sessionManager.getTokenSync()}")
+            setBody(createClassRequest)
+        }
+
+        if (response.status == HttpStatusCode.Unauthorized) {
+            throw ClientRequestException(response, "Unauthorized")
+        }
+
+        return response.body()
+    }
 }

@@ -229,7 +229,7 @@ fun Route.classRoutes(repo: ClassRepository) {
                 val result = repo.editClass(
                     classId,
                     userId,
-                    request.className,
+                    request.name,
                     request.description,
                     request.dayOfWeek,
                     request.startTime,

@@ -58,6 +58,7 @@ import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
 import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
+import com.tepuytech.fitzon.presentation.ui.composable.parseTime
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
 import com.tepuytech.fitzon.presentation.ui.screen.ClassDetails
 import com.tepuytech.fitzon.presentation.ui.screen.NotificationCenterBox
@@ -499,17 +500,7 @@ fun TopAthleteCard(
     }
 }
 
-private fun parseTime(timeString: String): Int {
-    val parts = timeString.split(":")
-    var hours = parts[0].toInt()
-    val minutes = parts[1].split(" ")[0].toInt()
-    val isPM = timeString.contains("PM")
 
-    if (isPM && hours != 12) hours += 12
-    if (!isPM && hours == 12) hours = 0
-
-    return hours * 60 + minutes
-}
 
 @Preview
 @Composable

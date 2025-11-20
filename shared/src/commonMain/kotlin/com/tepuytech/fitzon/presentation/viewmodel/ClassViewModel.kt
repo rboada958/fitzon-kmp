@@ -11,6 +11,7 @@ import com.tepuytech.fitzon.domain.usecase.CreateClassUseCase
 import com.tepuytech.fitzon.domain.usecase.DeleteClassUseCase
 import com.tepuytech.fitzon.domain.usecase.EnrollClassUseCase
 import com.tepuytech.fitzon.domain.usecase.UnEnrollClassUseCase
+import com.tepuytech.fitzon.domain.usecase.UpdateClassUseCase
 import com.tepuytech.fitzon.presentation.state.ClassUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +24,8 @@ class ClassViewModel (
     private val availableClassesUseCase: AvailableClassesUseCase,
     private val enrollClassUseCase: EnrollClassUseCase,
     private val unenrollClassUseCase: UnEnrollClassUseCase,
-    private val classesDetailsUseCase: ClassesDetailsUseCase
+    private val classesDetailsUseCase: ClassesDetailsUseCase,
+    private val updateClassUseCase: UpdateClassUseCase
 ) : ScreenModel {
 
     private val _uiState = MutableStateFlow<ClassUiState>(ClassUiState.Idle)
@@ -188,6 +190,30 @@ class ClassViewModel (
                 }
             } catch (e: Exception) {
                 _enrollmentState.value = ClassUiState.Error(e.message ?: "Unknown error")
+            }
+        }
+    }
+
+    fun updateClass(request: CreateClassRequest, classId: String) {
+        screenModelScope.launch {
+            _uiState.value = ClassUiState.Loading
+            try {
+                when (val result = updateClassUseCase(request, classId)) {
+                    is ClassResult.SuccessCreateClass -> {
+                        _uiState.value = ClassUiState.SuccessCreateClass(result.createClass)
+                    }
+
+                    is ClassResult.Error -> {
+                        _uiState.value = ClassUiState.Error(result.message)
+                    }
+                    is ClassResult.Empty -> {
+                        _uiState.value = ClassUiState.Empty(result.message)
+                    }
+
+                    else -> {}
+                }
+            } catch (e: Exception) {
+                _uiState.value = ClassUiState.Error(e.message ?: "Unknown error")
             }
         }
     }

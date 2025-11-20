@@ -26,6 +26,7 @@ import com.tepuytech.fitzon.domain.usecase.RegisterUseCase
 import com.tepuytech.fitzon.domain.usecase.UnEnrollClassUseCase
 import com.tepuytech.fitzon.domain.usecase.UpdateAthleteProfileUseCase
 import com.tepuytech.fitzon.domain.usecase.UpdateBoxProfileUseCase
+import com.tepuytech.fitzon.domain.usecase.UpdateClassUseCase
 import com.tepuytech.fitzon.domain.usecase.UserRoleUseCase
 import com.tepuytech.fitzon.domain.usecase.WorkoutOfTheDayUseCase
 import org.koin.dsl.module
@@ -144,6 +145,12 @@ val useCaseModule = module {
 
     factory {
         CreateClassUseCase(
+            classRepository = get()
+        )
+    }
+
+    factory {
+        UpdateClassUseCase(
             classRepository = get()
         )
     }

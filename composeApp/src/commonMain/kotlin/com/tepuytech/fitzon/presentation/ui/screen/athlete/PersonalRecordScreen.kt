@@ -55,8 +55,11 @@ import com.tepuytech.fitzon.presentation.state.AthleteUiState
 import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
 import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
+import com.tepuytech.fitzon.presentation.ui.composable.formatDate
+import com.tepuytech.fitzon.presentation.ui.composable.formatExerciseName
 import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
+import com.tepuytech.fitzon.presentation.ui.composable.normalizeExerciseName
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
 import com.tepuytech.fitzon.presentation.viewmodel.AthleteViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -299,53 +302,7 @@ fun PersonalRecordDetailCard(
     }
 }
 
-fun normalizeExerciseName(exerciseName: String): String {
-    return exerciseName
-        .replace("-", "_")
-        .lowercase()
-}
 
-fun formatExerciseName(exerciseName: String): String {
-    return exerciseName
-        .replace("_", " ")
-        .split(" ")
-        .joinToString(" ") { word ->
-            word.lowercase().replaceFirstChar { it.uppercase() }
-        }
-}
-
-fun formatDate(dateString: String): String {
-    return try {
-        val parts = dateString.split("T")[0].split("-")
-        if (parts.size != 3) return dateString
-
-        val year = parts[0]
-        val month = parts[1].toIntOrNull() ?: return dateString
-        val day = parts[2].toIntOrNull() ?: return dateString
-
-        val monthName = when (month) {
-            1 -> "Ene"
-            2 -> "Feb"
-            3 -> "Mar"
-            4 -> "Abr"
-            5 -> "May"
-            6 -> "Jun"
-            7 -> "Jul"
-            8 -> "Ago"
-            9 -> "Sep"
-            10 -> "Oct"
-            11 -> "Nov"
-            12 -> "Dic"
-            else -> return dateString
-        }
-
-        "$day $monthName $year"
-
-    } catch (e: Exception) {
-        println("Error formatting date: ${e.message}")
-        dateString
-    }
-}
 
 @Preview
 @Composable

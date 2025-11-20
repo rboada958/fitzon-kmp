@@ -112,6 +112,9 @@ class ManageClasses(val boxId: String) : Screen {
             onDetailsClick = { classId ->
                 navigator.push(ClassDetails(classId))
             },
+            onEditClass = { classId ->
+                navigator.push(CreateClass(boxId, classId, true))
+            }
         )
 
         if (uiState is ClassUiState.LoadingDeleteClass) {
