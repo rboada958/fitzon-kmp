@@ -1,5 +1,9 @@
 package com.tepuytech.fitzon.presentation.ui.composable
 
+import com.tepuytech.fitzon.domain.model.DayWorkouts
+import com.tepuytech.fitzon.domain.model.WorkoutItem
+import com.tepuytech.fitzon.domain.model.workout.BoxWorkoutResponse
+
 fun mapDayToSpanish(day: String): String {
     return when (day) {
         "MONDAY" -> "Lunes"
@@ -80,4 +84,34 @@ fun parseTime(timeString: String): Int {
     if (!isPM && hours == 12) hours = 0
 
     return hours * 60 + minutes
+}
+
+fun groupWorkoutByDay(workouts: List<BoxWorkoutResponse>): List<DayWorkouts> {
+    val backendDays = listOf(
+        "MONDAY", "TUESDAY", "WEDNESDAY",
+        "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"
+    )
+
+    val grouped = workouts.groupBy { it.dayOfWeek.uppercase() }
+
+    return backendDays.map { backendDay ->
+        val dayWorkouts = grouped[backendDay]?.map {
+            WorkoutItem(
+                id = it.id,
+                name = it.title,
+                type = it.difficulty,
+                icon = when (it.difficulty.lowercase()) {
+                    "strength" -> "🏋️"
+                    "cardio" -> "🏃"
+                    "flexibility" -> "🧘"
+                    else -> "💪"
+                }
+            )
+        } ?: emptyList()
+
+        DayWorkouts(
+            day = mapDayToSpanish(backendDay),
+            workouts = dayWorkouts
+        )
+    }
 }

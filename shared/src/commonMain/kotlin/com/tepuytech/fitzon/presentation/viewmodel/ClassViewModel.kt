@@ -39,7 +39,7 @@ class ClassViewModel (
 
     fun createClass(request: CreateClassRequest) {
         screenModelScope.launch {
-            _uiState.value = ClassUiState.Loading
+            _uiState.value = ClassUiState.LoadingCreateClass
             try {
                 when (val result = createClassUseCase(request)) {
                     is ClassResult.SuccessCreateClass -> {
@@ -177,7 +177,7 @@ class ClassViewModel (
 
     fun classDetails(classId: String) {
         screenModelScope.launch {
-            _uiState.value = ClassUiState.Loading
+            _uiState.value = ClassUiState.LoadingClassDetails
             try {
                 when (val result = classesDetailsUseCase(classId)) {
                     is ClassResult.SuccessClassDetails -> {
@@ -196,11 +196,11 @@ class ClassViewModel (
 
     fun updateClass(request: CreateClassRequest, classId: String) {
         screenModelScope.launch {
-            _uiState.value = ClassUiState.Loading
+            _uiState.value = ClassUiState.LoadingUpdateClass
             try {
                 when (val result = updateClassUseCase(request, classId)) {
-                    is ClassResult.SuccessCreateClass -> {
-                        _uiState.value = ClassUiState.SuccessCreateClass(result.createClass)
+                    is ClassResult.SuccessUpdateClass -> {
+                        _uiState.value = ClassUiState.SuccessUpdateClass(result.response)
                     }
 
                     is ClassResult.Error -> {

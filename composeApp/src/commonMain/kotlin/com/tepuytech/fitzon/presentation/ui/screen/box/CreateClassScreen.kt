@@ -129,19 +129,18 @@ class CreateClass(val boxId: String, val classId: String = "", val isEditing: Bo
                 is ClassUiState.SuccessCreateClass -> {
                     showSuccessDialog = true
                 }
+                is ClassUiState.SuccessUpdateClass -> {
+                    showSuccessDialog = true
+                }
                 else -> {}
             }
         }
 
         val isLoading = if (isEditing) {
-            coachUiState is CoachUiState.Loading ||
-                    classUiState is ClassUiState.LoadingEditClass ||
-                    workoutUiState is WorkoutUiState.Loading ||
-                    (coachUiState is CoachUiState.Success &&
-                            classUiState !is ClassUiState.SuccessClassDetails) ||
-                    (coachUiState is CoachUiState.Success &&
-                            classUiState is ClassUiState.SuccessClassDetails &&
-                            workoutUiState !is WorkoutUiState.SuccessBoxWorkout)
+            !(coachUiState is CoachUiState.Success &&
+                    (classUiState is ClassUiState.SuccessClassDetails ||
+                            classUiState is ClassUiState.LoadingUpdateClass || classUiState is ClassUiState.SuccessUpdateClass) &&
+                    workoutUiState is WorkoutUiState.SuccessBoxWorkout)
         } else {
             coachUiState is CoachUiState.Loading ||
                     workoutUiState is WorkoutUiState.Loading ||
@@ -195,7 +194,8 @@ class CreateClass(val boxId: String, val classId: String = "", val isEditing: Bo
             )
         }
 
-        if (classUiState is ClassUiState.Loading) {
+        if (classUiState is ClassUiState.LoadingCreateClass ||
+            classUiState is ClassUiState.LoadingUpdateClass) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -254,6 +254,9 @@ class CreateClass(val boxId: String, val classId: String = "", val isEditing: Bo
                         onClick = {
                             showSuccessDialog = false
                             shouldClearFields = true
+                            if (isEditing) {
+                                navigator.pop()
+                            }
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = greenPrimary

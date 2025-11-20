@@ -11,7 +11,7 @@ class UpdateClassUseCase(
     suspend operator fun invoke(request: CreateClassRequest, classId: String): ClassResult {
         return try {
             val response = classRepository.updateClass(request, classId)
-            ClassResult.SuccessCreateClass(response)
+            ClassResult.SuccessUpdateClass(response)
         } catch (e: ApiException) {
             ClassResult.Error(e.errorMessage)
         }

@@ -55,7 +55,6 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.tepuytech.fitzon.domain.model.DayWorkouts
 import com.tepuytech.fitzon.domain.model.WorkoutItem
-import com.tepuytech.fitzon.domain.model.workout.BoxWorkoutResponse
 import com.tepuytech.fitzon.getPlatform
 import com.tepuytech.fitzon.presentation.state.WorkoutUiState
 import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
@@ -63,6 +62,7 @@ import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
 import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
+import com.tepuytech.fitzon.presentation.ui.composable.groupWorkoutByDay
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
 import com.tepuytech.fitzon.presentation.viewmodel.WorkoutViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -176,15 +176,6 @@ fun ManageWorkoutsScreen(
                                 tint = Color.White
                             )
                         }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { /* Menú de opciones */ }) {
-                        Text(
-                            text = "⋮",
-                            fontSize = 24.sp,
-                            color = Color.White
-                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -453,25 +444,12 @@ fun WorkoutCard(
                     DropdownMenuItem(
                         text = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("📋 ", fontSize = 18.sp)
-                                Text("Duplicar", color = Color.White)
-                            }
-                        },
-                        onClick = {
-                            // Acción duplicar
-                            showMenu = false
-                        }
-                    )
-
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("📅 ", fontSize = 18.sp)
                                 Text("Mover a otro día", color = Color.White)
                             }
                         },
                         onClick = {
-                            // Acción mover
+                            // mover
                             showMenu = false
                         }
                     )
@@ -496,46 +474,7 @@ fun WorkoutCard(
     }
 }
 
-private fun groupWorkoutByDay(workouts: List<BoxWorkoutResponse>): List<DayWorkouts> {
-    val backendDays = listOf(
-        "MONDAY", "TUESDAY", "WEDNESDAY",
-        "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"
-    )
 
-    // Mapeo inglés -> español
-    val dayTranslations = mapOf(
-        "MONDAY" to "Lunes",
-        "TUESDAY" to "Martes",
-        "WEDNESDAY" to "Miércoles",
-        "THURSDAY" to "Jueves",
-        "FRIDAY" to "Viernes",
-        "SATURDAY" to "Sábado",
-        "SUNDAY" to "Domingo"
-    )
-
-    val grouped = workouts.groupBy { it.dayOfWeek.uppercase() }
-
-    return backendDays.map { backendDay ->
-        val dayWorkouts = grouped[backendDay]?.map {
-            WorkoutItem(
-                id = it.id,
-                name = it.title,
-                type = it.difficulty,
-                icon = when (it.difficulty.lowercase()) {
-                    "strength" -> "🏋️"
-                    "cardio" -> "🏃"
-                    "flexibility" -> "🧘"
-                    else -> "💪"
-                }
-            )
-        } ?: emptyList()
-
-        DayWorkouts(
-            day = dayTranslations[backendDay] ?: backendDay,
-            workouts = dayWorkouts
-        )
-    }
-}
 
 @Preview(showBackground = true)
 @Composable

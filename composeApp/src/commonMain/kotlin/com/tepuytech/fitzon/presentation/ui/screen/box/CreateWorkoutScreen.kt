@@ -25,6 +25,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.tepuytech.fitzon.domain.model.ExerciseInput
 import com.tepuytech.fitzon.domain.model.workout.CreateExerciseRequest
 import com.tepuytech.fitzon.domain.model.workout.CreateWorkoutRequest
 import com.tepuytech.fitzon.getPlatform
@@ -576,15 +577,6 @@ fun CreateWorkoutScreen(
         )
     }
 }
-
-data class ExerciseInput(
-    val id: Int,
-    val name: String,
-    val sets: String,
-    val reps: String,
-    val rxVersion: String,
-    val scaledVersion: String
-)
 
 @Composable
 fun ExerciseInputCard(

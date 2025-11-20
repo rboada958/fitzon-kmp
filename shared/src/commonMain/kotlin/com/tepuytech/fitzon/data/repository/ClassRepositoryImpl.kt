@@ -12,6 +12,7 @@ import com.tepuytech.fitzon.domain.model.classes.ClassDetailsResponse
 import com.tepuytech.fitzon.domain.model.classes.ClassesResponse
 import com.tepuytech.fitzon.domain.model.classes.CreateClassRequest
 import com.tepuytech.fitzon.domain.model.classes.CreateClassResponse
+import com.tepuytech.fitzon.domain.model.classes.UpdateClassResponse
 import com.tepuytech.fitzon.domain.repository.ClassRepository
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
@@ -244,7 +245,7 @@ class ClassRepositoryImpl(
         }
     }
 
-    override suspend fun updateClass(request: CreateClassRequest, classId: String): CreateClassResponse {
+    override suspend fun updateClass(request: CreateClassRequest, classId: String): UpdateClassResponse {
         return try {
             apiService.updateClass(request, classId)
         } catch (e: ClientRequestException) {
