@@ -71,8 +71,10 @@ import com.tepuytech.fitzon.presentation.state.WorkoutUiState
 import com.tepuytech.fitzon.presentation.ui.composable.AthleteDashboardShimmer
 import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.cardBackground
+import com.tepuytech.fitzon.presentation.ui.composable.formatExerciseName
 import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
+import com.tepuytech.fitzon.presentation.ui.composable.normalizeExerciseName
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
 import com.tepuytech.fitzon.presentation.viewmodel.WorkoutViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview

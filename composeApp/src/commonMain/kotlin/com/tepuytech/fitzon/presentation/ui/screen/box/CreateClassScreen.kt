@@ -61,6 +61,7 @@ import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.tepuytech.fitzon.domain.model.WorkoutOption
+import com.tepuytech.fitzon.domain.model.classes.ClassDetailsResponse
 import com.tepuytech.fitzon.domain.model.classes.CreateClassRequest
 import com.tepuytech.fitzon.domain.model.coach.CoachResponse
 import com.tepuytech.fitzon.domain.model.workout.BoxWorkoutResponse
@@ -73,13 +74,14 @@ import com.tepuytech.fitzon.presentation.ui.composable.backgroundGradient
 import com.tepuytech.fitzon.presentation.ui.composable.greenLight
 import com.tepuytech.fitzon.presentation.ui.composable.greenPrimary
 import com.tepuytech.fitzon.presentation.ui.composable.mapDayToSpanish
+import com.tepuytech.fitzon.presentation.ui.composable.mapLevelToSpanish
 import com.tepuytech.fitzon.presentation.ui.composable.textGray
 import com.tepuytech.fitzon.presentation.viewmodel.ClassViewModel
 import com.tepuytech.fitzon.presentation.viewmodel.CoachViewModel
 import com.tepuytech.fitzon.presentation.viewmodel.WorkoutViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-class CreateClass(val boxId: String) : Screen {
+class CreateClass(val boxId: String, val classId: String = "", val isEditing: Boolean = false) : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -99,11 +101,6 @@ class CreateClass(val boxId: String) : Screen {
         var workoutName by remember { mutableStateOf("") }
         var shouldClearFields by remember { mutableStateOf(false) }
 
-        val levelsSpanish = mapOf(
-            "BEGINNER" to "Principiante",
-            "INTERMEDIATE" to "Intermedio",
-            "ADVANCED" to "Avanzado"
-        )
 
         LaunchedEffect(Unit) {
             coachViewModel.getCoaches()
@@ -111,14 +108,46 @@ class CreateClass(val boxId: String) : Screen {
 
         LaunchedEffect(coachUiState) {
             if (coachUiState is CoachUiState.Success || coachUiState is CoachUiState.Empty) {
-                workoutViewModel.boxWorkout(boxId)
+                if (isEditing)
+                    classViewModel.classDetails(classId)
+                else
+                    workoutViewModel.boxWorkout(boxId)
             }
         }
 
-        val isLoading =
+        LaunchedEffect(isEditing, classUiState) {
+            println("🔍 LaunchedEffect triggered - isEditing: $isEditing, classUiState: ${classUiState::class.simpleName}")
+
+            if (isEditing && classUiState is ClassUiState.SuccessClassDetails) {
+                println("✓ Calling boxWorkout($boxId)")
+                workoutViewModel.boxWorkout(boxId)
+            } else {
+                println("✗ Condition not met - isEditing: $isEditing, is SuccessClassDetails: ${classUiState is ClassUiState.SuccessClassDetails}")
+            }
+
+            when (classUiState) {
+                is ClassUiState.SuccessCreateClass -> {
+                    showSuccessDialog = true
+                }
+                else -> {}
+            }
+        }
+
+        val isLoading = if (isEditing) {
+            coachUiState is CoachUiState.Loading ||
+                    classUiState is ClassUiState.LoadingEditClass ||
+                    workoutUiState is WorkoutUiState.Loading ||
+                    (coachUiState is CoachUiState.Success &&
+                            classUiState !is ClassUiState.SuccessClassDetails) ||
+                    (coachUiState is CoachUiState.Success &&
+                            classUiState is ClassUiState.SuccessClassDetails &&
+                            workoutUiState !is WorkoutUiState.SuccessBoxWorkout)
+        } else {
             coachUiState is CoachUiState.Loading ||
                     workoutUiState is WorkoutUiState.Loading ||
-                    (coachUiState is CoachUiState.Success && workoutUiState !is WorkoutUiState.SuccessBoxWorkout)
+                    (coachUiState is CoachUiState.Success &&
+                            workoutUiState !is WorkoutUiState.SuccessBoxWorkout)
+        }
 
         if (isLoading) {
             AthleteDashboardShimmer()
@@ -133,14 +162,26 @@ class CreateClass(val boxId: String) : Screen {
                 groupWorkoutsByDay(workoutState.boxWorkoutData)
             }
 
+            val classState = if (isEditing && classUiState is ClassUiState.SuccessClassDetails) {
+                classUiState as ClassUiState.SuccessClassDetails
+            } else {
+                null
+            }
+
             CreateClassScreen(
+                classesState = classState?.response,
                 coachesState = coachState.coaches,
                 workoutState = workoutsByDay,
                 onBackClick = {
                     navigator.pop()
                 },
                 onCreateClassClick = {
-                    classViewModel.createClass(it)
+                    if (isEditing) {
+                        classViewModel.updateClass(it, classId)
+                    }
+                    else {
+                        classViewModel.createClass(it)
+                    }
                     createdClassData = it
                     println(it.toString())
                 },
@@ -149,17 +190,9 @@ class CreateClass(val boxId: String) : Screen {
                     workoutName = workout
                 },
                 clearFields = shouldClearFields,
+                isEditing = isEditing,
                 onFieldsCleared = { shouldClearFields = false }
             )
-        }
-
-        LaunchedEffect(classUiState) {
-            when (classUiState) {
-                is ClassUiState.SuccessCreateClass -> {
-                    showSuccessDialog = true
-                }
-                else -> {}
-            }
         }
 
         if (classUiState is ClassUiState.Loading) {
@@ -183,14 +216,17 @@ class CreateClass(val boxId: String) : Screen {
                 onDismissRequest = { showSuccessDialog = false },
                 title = {
                     Text(
-                        text = "✓ Clase Creada",
+                        text = if (isEditing) "✓ Clase Editada" else "✓ Clase Creada",
                         fontWeight = FontWeight.Bold,
                         fontSize = 22.sp
                     )
                 },
                 text = {
                     Column {
-                        Text("La clase ha sido creada exitosamente", fontSize = 15.sp)
+                        Text(
+                            text = if (isEditing) "La clase ha sido editada exitosamente" else "La clase ha sido creada exitosamente",
+                            fontSize = 15.sp
+                        )
                         Spacer(modifier = Modifier.height(16.dp))
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
@@ -206,7 +242,7 @@ class CreateClass(val boxId: String) : Screen {
                                 SuccessDetailRow("Inicio:", data.startTime)
                                 SuccessDetailRow("Fin:", data.endTime)
                                 SuccessDetailRow("Coach:", coachName)
-                                SuccessDetailRow("Nivel:", levelsSpanish[data.level]!!)
+                                SuccessDetailRow("Nivel:", mapLevelToSpanish(data.level))
                                 SuccessDetailRow("Workout:", workoutName)
                                 SuccessDetailRow("Capacidad:", data.maxCapacity.toString())
                             }
@@ -237,12 +273,14 @@ class CreateClass(val boxId: String) : Screen {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateClassScreen(
+    classesState: ClassDetailsResponse? = null,
     coachesState: List<CoachResponse> = emptyList(),
     workoutState: Map<String, List<WorkoutOption>> = emptyMap(),
     onBackClick: () -> Unit = {},
     onCreateClassClick: (CreateClassRequest) -> Unit = {},
     onNames: (String, String) -> Unit = { _, _ -> },
     clearFields: Boolean = false,
+    isEditing: Boolean = false,
     onFieldsCleared: () -> Unit = {}
 ) {
     var className by remember { mutableStateOf("") }
@@ -274,12 +312,7 @@ fun CreateClassScreen(
 
     val platform = getPlatform()
 
-    val levels = listOf("BEGINNER", "INTERMEDIATE", "ADVANCED")
-    val levelsSpanish = mapOf(
-        "BEGINNER" to "Principiante",
-        "INTERMEDIATE" to "Intermedio",
-        "ADVANCED" to "Avanzado"
-    )
+    val levels = listOf("BEGINNER", "INTERMEDIATE", "ADVANCED", "RX")
 
     val days = listOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo")
 
@@ -301,12 +334,29 @@ fun CreateClassScreen(
         }
     }
 
+    LaunchedEffect(isEditing) {
+        if (isEditing) {
+            if (classesState == null) return@LaunchedEffect
+            className = classesState.className
+            description = classesState.description
+            selectedDay = mapDayToSpanish(classesState.dayOfWeek)
+            startTime = classesState.startTime
+            endTime = classesState.endTime
+            selectedCoach = classesState.coach.name
+            selectedCoachId = classesState.coach.id
+            selectedWorkout = classesState.workout.title
+            selectedWorkoutId = classesState.workout.id
+            capacity = classesState.maxCapacity.toString()
+            selectedLevel = mapLevelToSpanish(classesState.level)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "Crear Nueva Clase",
+                        text = if (isEditing) "Editar Clase" else "Crear Nueva Clase",
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
                     )
@@ -623,7 +673,7 @@ fun CreateClassScreen(
                     onExpandedChange = { expandedLevel = it }
                 ) {
                     OutlinedTextField(
-                        value = levelsSpanish[selectedLevel] ?: "Principiante",
+                        value = mapLevelToSpanish(selectedLevel),
                         onValueChange = {},
                         readOnly = true,
                         modifier = Modifier
@@ -654,7 +704,12 @@ fun CreateClassScreen(
                     ) {
                         levels.forEach { level ->
                             DropdownMenuItem(
-                                text = { Text(levelsSpanish[level] ?: level, color = Color.White, fontSize = 14.sp) },
+                                text = {
+                                    Text(
+                                        text = mapLevelToSpanish(level),
+                                        color = Color.White, fontSize = 14.sp
+                                    )
+                                },
                                 onClick = {
                                     selectedLevel = level
                                     expandedLevel = false
@@ -893,7 +948,7 @@ fun CreateClassScreen(
                         )
                     ) {
                         Text(
-                            "✓ Crear Clase",
+                            if (isEditing) "Editar Clase" else "✓ Crear Clase",
                             color = if (isFormValid) Color(0xFF081C15) else textGray,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(vertical = 4.dp)

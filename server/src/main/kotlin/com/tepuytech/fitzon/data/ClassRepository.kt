@@ -554,6 +554,7 @@ class ClassRepository {
                         listOf("Coach")
                     }
                     CoachInfoDTO(
+                        id = it[Coaches.id].toString(),
                         name = it[Users.name] ?: "Coach",
                         specialty = specialties.firstOrNull() ?: "CrossFit Coach",
                         icon = "👨‍🏫"
@@ -638,6 +639,7 @@ class ClassRepository {
             ClassDetailsDTO(
                 classId = classUuid.toString(),
                 className = classRow[ClassSchedules.name],
+                description = classRow[ClassSchedules.description] ?: "",
                 dayOfWeek = classRow[ClassSchedules.dayOfWeek],
                 startTime = classRow[ClassSchedules.startTime],
                 endTime = classRow[ClassSchedules.endTime],
@@ -661,7 +663,7 @@ class ClassRepository {
     fun editClass(
         classId: String,
         userId: String,
-        className: String,
+        name: String,
         description: String,
         dayOfWeek: String,
         startTime: String,
@@ -727,7 +729,7 @@ class ClassRepository {
 
             // Actualizar clase
             ClassSchedules.update({ ClassSchedules.id eq classUuid }) {
-                it[ClassSchedules.name] = className
+                it[ClassSchedules.name] = name
                 it[ClassSchedules.dayOfWeek] = dayOfWeek
                 it[ClassSchedules.startTime] = startTime
                 it[ClassSchedules.endTime] = endTime
@@ -765,7 +767,7 @@ class ClassRepository {
 
             EditClassResponse(
                 classId = classUuid.toString(),
-                className = className,
+                className = name,
                 dayOfWeek = dayOfWeek,
                 description = description,
                 startTime = startTime,

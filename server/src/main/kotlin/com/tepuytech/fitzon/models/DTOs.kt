@@ -119,6 +119,7 @@ data class TopAthleteDTO(
 
 @Serializable
 data class CoachInfoDTO(
+    val id: String,
     val name: String,
     val specialty: String,
     val icon: String

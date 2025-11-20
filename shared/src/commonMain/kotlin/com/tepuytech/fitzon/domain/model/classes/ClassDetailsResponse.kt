@@ -8,6 +8,7 @@ import kotlinx.serialization.Serializable
 data class ClassDetailsResponse(
     val classId: String = "class-123",
     val className: String = "CrossFit 101",
+    val description: String = "",
     val dayOfWeek: String = "LUNES",
     val startTime: String = "09:00 AM",
     val endTime: String = "10:00 AM",
@@ -16,6 +17,7 @@ data class ClassDetailsResponse(
     val currentEnrollment: Int = 3,
     val spotsLeft: Int = 12,
     val coach: CoachInfo = CoachInfo(
+        id = "coach-123",
         icon = "coach-123",
         name = "Carlos García",
         specialty = "Weightlifting",

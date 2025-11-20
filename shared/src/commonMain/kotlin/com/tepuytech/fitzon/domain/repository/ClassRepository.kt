@@ -16,5 +16,5 @@ interface ClassRepository {
     suspend fun enrollInClass(classId: String): EnrollmentResponse
     suspend fun unenrollInClass(classId: String) : UnEnrollmentResponse
     suspend fun classDetails(classId: String) : ClassDetailsResponse
-
+    suspend fun updateClass(request: CreateClassRequest, classId: String): CreateClassResponse
 }

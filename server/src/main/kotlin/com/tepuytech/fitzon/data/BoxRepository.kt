@@ -322,6 +322,7 @@ class BoxRepository {
                     }
 
                     CoachInfoDTO(
+                        id = coach[Coaches.id].toString(),
                         name = coach[Users.name] ?: "Coach",
                         specialty = specialties.firstOrNull() ?: "CrossFit Coach",
                         icon = "👨‍🏫"

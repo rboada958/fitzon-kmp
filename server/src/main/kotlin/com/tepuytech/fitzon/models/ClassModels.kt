@@ -120,6 +120,7 @@ data class AvailableClassDTO(
 data class ClassDetailsDTO(
     val classId: String,
     val className: String,
+    val description: String,
     val dayOfWeek: String,
     val startTime: String,
     val endTime: String,
@@ -161,7 +162,7 @@ data class EnrolledAthleteDTO(
 
 @Serializable
 data class EditClassRequest(
-    val className: String,
+    val name: String,
     val description: String,
     val dayOfWeek: String,
     val startTime: String,
