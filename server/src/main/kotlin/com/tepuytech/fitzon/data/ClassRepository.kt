@@ -730,6 +730,7 @@ class ClassRepository {
             // Actualizar clase
             ClassSchedules.update({ ClassSchedules.id eq classUuid }) {
                 it[ClassSchedules.name] = name
+                it[ClassSchedules.description] = description
                 it[ClassSchedules.dayOfWeek] = dayOfWeek
                 it[ClassSchedules.startTime] = startTime
                 it[ClassSchedules.endTime] = endTime
